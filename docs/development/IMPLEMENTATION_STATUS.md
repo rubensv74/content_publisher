@@ -27,7 +27,7 @@ La base ejecutable del producto contiene:
 - adaptador de exportación PNG/PDF;
 - modelo PostgreSQL V1 con RLS;
 - Storage privado;
-- workflow de calidad en GitHub.
+- workflow de calidad en GitHub para `push`, `pull_request` y ejecución manual.
 
 ## Supabase dedicado
 
@@ -72,11 +72,11 @@ La bandeja de Ideas ya dispone de persistencia real y operaciones básicas:
 
 Las operaciones se ejecutan mediante Server Actions y respetan la sesión autenticada y RLS.
 
-## Primer vertical slice de Content Studio
+## Vertical slice de Content Studio
 
-Se ha implementado el primer flujo funcional:
+El flujo funcional implementado alcanza ya:
 
-`IDEA → STORY → FORMAT → CONTENT STUDIO`
+`IDEA → STORY → FORMAT → DESIGN → PREVIEW`
 
 Desde una Idea se puede abrir `/publications/new` y definir:
 
@@ -95,13 +95,57 @@ Al crear el borrador:
 - se inserta una fila real en `publications`;
 - queda vinculada a la Idea de origen;
 - la Idea pasa a estado `converted`;
-- se abre el primer editor de Content Studio.
+- se abre Content Studio.
 
-Content Studio permite actualmente revisar y guardar la historia estructurada y un borrador del caption de LinkedIn. La biblioteca de Publicaciones lista los borradores existentes y permite reabrirlos.
+Content Studio permite revisar y guardar la historia estructurada, editar el borrador del caption de LinkedIn, seleccionar un diseño compatible y reabrir posteriormente el borrador desde la biblioteca de Publicaciones.
+
+## Renderer visual
+
+El renderer permanece aislado de los componentes de aplicación conforme a ADR-004. La biblioteca activa incorpora por ahora dos arquetipos de validación:
+
+### Build Note v1
+
+- familia `editorial`;
+- formato `single-image`;
+- variante `editorial-light`;
+- canvas 1080 × 1350, relación 4:5;
+- utiliza título, problema/contexto, decisión/solución y aprendizaje;
+- preview escalable en Content Studio;
+- exportación PNG mediante `html-to-image` usando exactamente el mismo árbol React visible en preview.
+
+### Step by Step v1
+
+- familia `carousel`;
+- formato `carousel`;
+- variante `editorial-light`;
+- páginas 1080 × 1350, relación 4:5;
+- genera dinámicamente portada y páginas a partir de contexto, intentos, decisión, aprendizaje e insight;
+- preview multipágina;
+- exportación PDF mediante `pdf-lib`, ensamblando las páginas PNG generadas desde los mismos nodos React.
+
+La identidad utilizada por estos dos arquetipos es provisional y está encapsulada en `publication-renderer/identity/default-identity.ts`. Sirve para validar el motor sin cerrar todavía la identidad visual definitiva.
+
+## Persistencia de Design
+
+La selección de diseño ya puede guardarse en `publications` mediante:
+
+- `archetype_key`;
+- `archetype_version`;
+- `variant_key`.
+
+Antes de persistir una selección, la Server Action valida que:
+
+- el arquetipo exista en el registro activo;
+- coincida la versión;
+- exista la variante;
+- el formato sea compatible;
+- el tipo de historia sea compatible.
+
+De esta forma una publicación no puede quedar vinculada a una combinación que el renderer actual no soporte.
 
 ## Validación del vertical slice en base de datos
 
-Se ha ejecutado una prueba transaccional bajo el rol autenticado real que comprobó:
+Se ejecutó una prueba transaccional bajo el rol autenticado real que comprobó:
 
 - creación de Idea;
 - creación de Publication vinculada;
@@ -110,37 +154,35 @@ Se ha ejecutado una prueba transaccional bajo el rol autenticado real que compro
 
 El resultado fue correcto y la transacción se revirtió al finalizar, por lo que no quedaron registros de prueba.
 
-## Vercel
-
-Se ha iniciado un primer deployment de preview de la aplicación para comprobar el acceso desde navegador con el usuario real de Supabase.
-
-Preview creado por la integración de despliegue:
-
-`https://content-publisher-d3spxd9gk-seijoruben-5081s-projects.vercel.app`
-
-Inspector devuelto por Vercel:
-
-`https://vercel.com/seijoruben-5081s-projects/content-publisher/FKKckWwSkczwZsnKW1uHKaMaaWJx`
-
-Las variables públicas de Supabase se suministraron únicamente al snapshot de despliegue y no se guardaron en GitHub. La publishable key de Supabase está diseñada para uso cliente y la protección efectiva de datos depende de RLS.
-
-La integración de Vercel devolvió el deployment como `INITIALIZING`, pero las operaciones posteriores de consulta de estado no localizaron todavía ese deployment en el listado del equipo. Por tanto, no se considerará validado hasta abrir el preview y completar el login manualmente.
-
-Este deployment de preview es una instantánea operativa para validación; no sustituye la futura conexión Git continua entre GitHub y Vercel.
-
 ## Calidad técnica
 
-El primer ciclo de CI histórico detectó una incompatibilidad de tipos al crear el `Blob` PDF. El problema se corrigió normalizando los bytes de `pdf-lib` antes de construir el `Blob`.
+El primer ciclo histórico de CI detectó una incompatibilidad de tipos al crear el `Blob` PDF. El problema se corrigió normalizando los bytes de `pdf-lib` antes de construir el `Blob`.
 
-Los runs antiguos permanecen en rojo como histórico. Las escrituras realizadas mediante la integración de GitHub no han generado nuevos runs visibles de Actions, por lo que el siguiente build de Vercel o una ejecución local seguirá siendo una validación necesaria del estado actual completo.
+Para validar el estado completo actual se abrió temporalmente una PR de control que ejecutó el workflow `Quality`. El resultado fue verde en:
+
+- instalación de dependencias;
+- ESLint;
+- TypeScript;
+- build de Next.js.
+
+La PR temporal se cerró sin fusionar y la rama de validación se devolvió al commit de `main`, por lo que no dejó el archivo marcador en la rama principal.
+
+A continuación el workflow se actualizó para ejecutarse también en cada `push` a `main`. El primer run sobre `main` con esta configuración terminó correctamente en lint, TypeScript y build.
+
+## Vercel
+
+La integración de despliegue ha generado previews de validación, pero el conector de Vercel no está devolviendo después esos deployments en el listado del equipo, aunque sí entrega URL e Inspector al crearlos. Por ese motivo no se considera todavía validado el recorrido navegador → login → Content Studio.
+
+Las variables públicas de Supabase se suministraron únicamente al snapshot de despliegue y no se guardaron en GitHub. La publishable key está diseñada para uso cliente; la protección efectiva de los datos depende de RLS.
+
+La conexión Git continua entre GitHub y un proyecto Vercel estable sigue pendiente. Esto es un asunto operativo de despliegue, no una modificación de la arquitectura aprobada.
 
 ## Siguiente objetivo
 
-1. abrir el preview de Vercel e iniciar sesión con el usuario personal;
-2. crear una Idea desde la interfaz;
-3. editarla y convertirla en publicación;
-4. guardar la historia en Content Studio;
-5. comenzar el bloque `DESIGN` conectando el contenido estructurado con el primer arquetipo React;
-6. después habilitar `PREVIEW` y probar el exportador PNG/PDF con contenido real.
+1. validar el recorrido completo en navegador con el usuario real;
+2. revisar visualmente Build Note y Step by Step con contenido real;
+3. cerrar la identidad visual V1 y persistir `identity_profiles`;
+4. persistir los renders finales después de exportarlos;
+5. preparar la frontera `PUBLISH` hacia Buffer/LinkedIn.
 
-No se modificará la arquitectura aprobada sin abrir un nuevo gate si aparece una decisión estructural relevante.
+Antes de implementar `PUBLISH` será necesario resolver un nuevo gate de arquitectura sobre el almacenamiento y exposición estable de los assets finales, porque Buffer necesita URLs públicas y estables mientras los recursos fuente deben permanecer privados.
