@@ -2,7 +2,9 @@
 
 ## Estado
 
-La arquitectura base de la V1 ya tiene cerradas las decisiones sobre plataforma, interfaz, autenticación, renderizado y modelo de datos. Antes de generar el esqueleto Next.js queda por decidir explícitamente cómo organizaremos el routing y el código fuente para no introducir esa estructura de forma accidental.
+La arquitectura base necesaria para iniciar la V1 está cerrada. Plataforma, interfaz, autenticación, renderizado, modelo de datos y organización del código fuente ya tienen decisiones registradas.
+
+A partir de este punto el desarrollo puede avanzar de forma incremental. Solo se abrirá un nuevo gate cuando aparezca una decisión que cambie de forma relevante dependencias, contratos, fronteras, seguridad, persistencia, despliegue o mantenibilidad.
 
 ## Objetivo arquitectónico
 
@@ -12,9 +14,30 @@ Construir una aplicación web personal, modular y extensible, capaz de gestionar
 
 ### Aplicación
 
-- Next.js
+- Next.js con App Router
 - React
 - TypeScript
+- código principal dentro de `src/`
+
+### Organización principal
+
+```text
+src/
+├── app/                    # rutas y composición
+├── features/               # capacidades del producto
+├── components/             # UI compartida de la aplicación
+├── publication-renderer/   # motor visual publicable
+├── domain/                 # contratos compartidos
+├── lib/                    # integraciones y utilidades técnicas
+└── config/                 # catálogos y configuración versionada
+```
+
+Reglas:
+
+- Server Components por defecto;
+- `"use client"` solo cuando exista una necesidad concreta;
+- `src/app/` no alojará por defecto la lógica funcional reutilizable;
+- el renderer no dependerá de la UI de la aplicación.
 
 ### Interfaz de la aplicación
 
@@ -76,6 +99,7 @@ Reglas de persistencia:
 ### Publicación
 
 - Buffer como primera capa de integración con LinkedIn
+- la lógica específica de Buffer quedará detrás de una frontera propia de publicación
 
 ### Repositorio
 
@@ -87,25 +111,21 @@ Reglas de persistencia:
 
 La lógica de Content Publisher no debe depender directamente de Buffer o LinkedIn. La publicación se tratará como una capacidad conectable mediante una interfaz propia.
 
-Esto permitirá sustituir Buffer, añadir publicación directa o incorporar otros destinos sin modificar el núcleo editorial.
-
 ### 2. Separar contenido y presentación
 
-Una publicación no debe almacenarse como una imagen terminada. Se almacenará como contenido estructurado más una elección de diseño.
-
-De este modo el mismo contenido podrá cambiar de arquetipo, formato o variante sin reescribirse.
+Una publicación se almacenará como contenido estructurado más una elección de diseño, no únicamente como un archivo final.
 
 ### 3. Diseños controlados, no lienzo libre
 
 El motor visual utilizará arquetipos y variantes. No se construirá un editor gráfico de posicionamiento libre.
 
-### 4. Separar la UI del producto del contenido publicable
+### 4. Separar la UI del contenido publicable
 
-La interfaz puede apoyarse en shadcn/ui, pero el renderer final no. Esta frontera evita que una actualización visual de la aplicación modifique accidentalmente la apariencia de las publicaciones.
+La interfaz puede apoyarse en shadcn/ui, pero el renderer final no.
 
 ### 5. Separar renderizado y exportación
 
-El arquetipo define qué se ve. El adaptador de exportación define cómo se convierte esa vista en PNG o PDF. Los arquetipos no conocerán `html-to-image` ni `pdf-lib`.
+El arquetipo define qué se ve. El adaptador de exportación define cómo se convierte esa vista en PNG o PDF.
 
 ### 6. Modelo relacional con flexibilidad controlada
 
@@ -121,15 +141,19 @@ Firma, tipografías, paletas, series y reglas visuales deben vivir en una config
 
 ### 9. Historial desde el principio
 
-Ideas, borradores y publicaciones deben conservar suficiente información para que, más adelante, el motor de sugerencias pueda evitar repetición y razonar sobre el historial editorial.
+Ideas, borradores y publicaciones deben conservar suficiente información para que el futuro Suggestion Engine pueda evitar repetición y razonar sobre el historial editorial.
 
 ### 10. Trazabilidad de renders
 
-Un cambio futuro de tipografía, paleta o arquetipo no debe borrar el contexto de una publicación anterior. Los renders conservarán la configuración relevante con la que fueron generados.
+Los renders conservarán la versión del arquetipo y el contexto visual relevante con el que fueron generados.
 
-### 11. IA como capa sustituible
+### 11. Routing delgado
 
-La IA no debe estar mezclada con las reglas básicas del producto. Las funciones de asistencia editorial se encapsularán para que el proveedor o modelo pueda cambiar sin rehacer el flujo principal.
+Las rutas componen capacidades. La lógica reutilizable vive en módulos funcionales y no queda enterrada en `src/app/`.
+
+### 12. IA como capa sustituible
+
+La IA no debe estar mezclada con las reglas básicas del producto. Las funciones de asistencia editorial se encapsularán para que proveedor o modelo puedan cambiar.
 
 ## Módulos conceptuales
 
@@ -169,40 +193,17 @@ Publicación / programación
 Historial
 ```
 
-## Fronteras importantes
+## ADR vigentes
 
-### Contenido
+- `ADR-001-WEB_PLATFORM_AND_CORE_STACK.md`
+- `ADR-002_TEMPLATE_DRIVEN_VISUAL_SYSTEM.md`
+- `ADR-003_PUBLISHING_ADAPTER_BUFFER.md`
+- `ADR-004_UI_STYLE_AND_RENDERER_BOUNDARY.md`
+- `ADR-005_PERSONAL_AUTHENTICATION.md`
+- `ADR-006_BROWSER_RENDERING_AND_PDF_EXPORT.md`
+- `ADR-007_HYBRID_RELATIONAL_JSONB_DATA_MODEL.md`
+- `ADR-008_NEXTJS_APP_ROUTER_AND_SOURCE_ORGANIZATION.md`
 
-Debe poder existir sin diseño.
+## Regla de evolución
 
-### Diseño
-
-Consume contenido estructurado y configuración visual, pero no modifica el significado editorial.
-
-### Renderizado
-
-Convierte contenido + diseño + identidad + assets en una representación visual React. No puede depender de componentes de shadcn/ui.
-
-### Exportación
-
-Convierte el resultado visual a PNG o PDF. En V1 usa `html-to-image` y `pdf-lib`, pero esas dependencias quedan aisladas detrás de una interfaz propia.
-
-### Persistencia
-
-Conserva entidades, relaciones, contenido versionado y trazabilidad. No debe decidir cómo se representa visualmente una publicación.
-
-### Publicación
-
-Recibe texto y recursos ya terminados. No debe decidir cómo se diseñan.
-
-### Suggestion Engine
-
-Será un productor de ideas y recomendaciones, no un publicador autónomo.
-
-## Decisiones abiertas antes de generar el esqueleto de aplicación
-
-1. **AG-005:** estrategia de routing y organización inicial del código Next.js.
-
-La gestión de estado y las librerías de formularios se decidirán solo si el desarrollo demuestra que hacen falta; no se introducirán por defecto.
-
-Las elecciones posteriores que cambien dependencias, contratos o fronteras relevantes deberán abrir un nuevo gate antes de implementarse.
+No se introducirán librerías globales de estado, formularios, caché, tests E2E u otras dependencias estructurales simplemente por anticipación. Se incorporarán cuando una necesidad real lo justifique. Si esa incorporación cambia de forma significativa la arquitectura, se abrirá un nuevo gate antes de implementarla.
