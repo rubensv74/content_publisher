@@ -8,8 +8,8 @@ const quickActions = [
   },
   {
     title: "Crear publicación",
-    description: "Empieza a convertir una idea en una pieza lista para LinkedIn.",
-    href: "/publications",
+    description: "Empieza desde una idea y conviértela en una historia estructurada.",
+    href: "/ideas",
   },
   {
     title: "Explorar diseños",
@@ -29,14 +29,14 @@ export default function HomePage() {
           Convierte trabajo real en contenido que merezca ser publicado.
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-7 text-[var(--muted)]">
-          La V1 recorrerá todo el camino desde la idea hasta la publicación, manteniendo tu contenido y tu identidad visual bajo control.
+          Content Publisher ya conecta la captura de ideas con el primer Content Studio. El siguiente salto será transformar esas historias en diseños reales y previsualizables.
         </p>
       </header>
 
       <section className="grid gap-4 md:grid-cols-3">
         {quickActions.map((action) => (
           <Link
-            key={action.href}
+            key={action.title}
             href={action.href}
             className="group rounded-2xl border border-[var(--border)] bg-white p-6 transition hover:-translate-y-0.5 hover:shadow-sm"
           >
@@ -55,11 +55,11 @@ export default function HomePage() {
           <div>
             <p className="text-sm font-medium">Estado del producto</p>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Cimentación técnica en curso. El siguiente objetivo funcional es la bandeja de ideas.
+              Login privado, Supabase y CRUD de Ideas están operativos. El flujo Idea → Story → Format → Content Studio ya está implementado en su primera versión.
             </p>
           </div>
           <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-            V1 · Foundation
+            V1 · Vertical Slice
           </span>
         </div>
       </section>
