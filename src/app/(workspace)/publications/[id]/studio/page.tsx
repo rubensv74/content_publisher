@@ -8,9 +8,8 @@ import {
   updatePublicationStory,
 } from "@/features/publications/actions";
 import { getPublication } from "@/features/publications/data";
+import { PersistedPublicationPreview } from "@/features/renders/persisted-publication-preview";
 import type { RenderablePublication } from "@/publication-renderer/contracts";
-import { BuildNotePreview } from "@/publication-renderer/preview/build-note-preview";
-import { StepByStepPreview } from "@/publication-renderer/preview/step-by-step-preview";
 
 const workflow = ["Idea", "Story", "Format", "Design", "Preview", "Publish"];
 
@@ -64,6 +63,7 @@ export default async function PublicationStudioPage({
     storyType: publication.story_type,
     format: publication.format,
     structuredContent: story,
+    contentSchemaVersion: publication.content_schema_version,
     archetypeKey: candidateDesign.key,
     archetypeVersion: candidateDesign.version,
     variantKey: candidateDesign.variant,
@@ -208,11 +208,16 @@ export default async function PublicationStudioPage({
               </p>
             </div>
 
-            {publication.format === "carousel" ? (
-              <StepByStepPreview publication={renderablePublication} />
-            ) : (
-              <BuildNotePreview publication={renderablePublication} />
-            )}
+            <PersistedPublicationPreview
+              publication={renderablePublication}
+              canPersist={designSelected}
+            />
+
+            {!designSelected ? (
+              <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                Puedes exportar el preview localmente, pero antes de crear un render final público debes guardar este diseño como selección de la publicación.
+              </p>
+            ) : null}
           </section>
 
           <div className="flex justify-end">
@@ -298,9 +303,9 @@ export default async function PublicationStudioPage({
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
               Estado del flujo
             </p>
-            <h2 className="mt-3 font-semibold">Design + Preview operativos</h2>
+            <h2 className="mt-3 font-semibold">Preview → Render Ready operativo</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Imagen única exporta PNG y carrusel exporta PDF. El siguiente bloque será preparar el render final persistente antes de publicar.
+              Una vez seleccionado el diseño, el PNG/PDF final puede guardarse en Storage público con una ruta inmutable y una fila trazable en renders.
             </p>
           </section>
         </aside>
