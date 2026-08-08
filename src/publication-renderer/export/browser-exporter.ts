@@ -61,6 +61,9 @@ export const browserPublicationExporter: PublicationExportAdapter = {
     }
 
     const bytes = await pdf.save();
-    return new Blob([bytes], { type: "application/pdf" });
+    const normalizedBytes = new Uint8Array(bytes.byteLength);
+    normalizedBytes.set(bytes);
+
+    return new Blob([normalizedBytes.buffer], { type: "application/pdf" });
   },
 };
