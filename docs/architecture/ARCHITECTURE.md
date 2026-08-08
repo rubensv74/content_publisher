@@ -2,7 +2,7 @@
 
 ## Estado
 
-Arquitectura base acordada. Existen decisiones de implementación todavía abiertas que deberán resolverse antes de iniciar el código.
+Arquitectura base acordada. La estrategia de interfaz y la separación respecto al renderer visual ya están aprobadas. Continúan abiertos varios gates antes de inicializar el código de producto.
 
 ## Objetivo arquitectónico
 
@@ -15,6 +15,17 @@ Construir una aplicación web personal, modular y extensible, capaz de gestionar
 - Next.js
 - React
 - TypeScript
+
+### Interfaz de la aplicación
+
+- Tailwind CSS
+- shadcn/ui para componentes comunes
+
+### Motor visual de publicaciones
+
+- componentes React propios
+- tokens visuales propios
+- sin dependencia de shadcn/ui dentro del árbol de renderizado final
 
 ### Datos y almacenamiento
 
@@ -52,15 +63,19 @@ De este modo el mismo contenido podrá cambiar de arquetipo, formato o variante 
 
 El motor visual utilizará arquetipos y variantes. No se construirá un editor gráfico de posicionamiento libre.
 
-### 4. Identidad centralizada
+### 4. Separar la UI del producto del contenido publicable
+
+La interfaz puede apoyarse en shadcn/ui, pero el renderer final no. Esta frontera evita que una actualización visual de la aplicación modifique accidentalmente la apariencia de las publicaciones.
+
+### 5. Identidad centralizada
 
 Firma, tipografías, paletas, series y reglas visuales deben vivir en una configuración central y no duplicarse dentro de cada plantilla.
 
-### 5. Historial desde el principio
+### 6. Historial desde el principio
 
 Ideas, borradores y publicaciones deben conservar suficiente información para que, más adelante, el motor de sugerencias pueda evitar repetición y razonar sobre el historial editorial.
 
-### 6. IA como capa sustituible
+### 7. IA como capa sustituible
 
 La IA no debe estar mezclada con las reglas básicas del producto. Las funciones de asistencia editorial se encapsularán para que el proveedor o modelo pueda cambiar sin rehacer el flujo principal.
 
@@ -113,7 +128,7 @@ Consume contenido estructurado y configuración visual, pero no modifica el sign
 
 ### Renderizado
 
-Convierte una composición en un recurso final, como imagen o documento.
+Convierte una composición en un recurso final, como imagen o documento. No puede depender de componentes de shadcn/ui.
 
 ### Publicación
 
@@ -125,13 +140,12 @@ Será un productor de ideas y recomendaciones, no un publicador autónomo.
 
 ## Decisiones todavía abiertas
 
-Antes de inicializar el código deben resolverse explícitamente, al menos:
+Antes de inicializar el código deben resolverse explícitamente:
 
-1. estrategia de estilos y componentes visuales;
-2. mecanismo de autenticación para la V1 personal;
-3. estrategia técnica de renderizado de imágenes y PDF;
-4. estructura inicial del modelo de datos;
-5. gestión de estado del cliente, si fuera necesaria más allá de las capacidades nativas de React/Next.js;
-6. librerías concretas para formularios y validación, si se decide utilizarlas.
+1. **AG-002:** mecanismo de autenticación para la V1 personal;
+2. **AG-003:** estrategia técnica de renderizado de imágenes y PDF;
+3. **AG-004:** estructura inicial del modelo de datos.
 
-Estas decisiones no deben introducirse de manera accidental mediante un generador de proyecto o una plantilla de terceros.
+La gestión de estado y las librerías de formularios se decidirán solo si el desarrollo demuestra que hacen falta; no se introducirán por defecto.
+
+Estas decisiones no deben aparecer de manera accidental mediante un generador de proyecto o una plantilla de terceros.
