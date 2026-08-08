@@ -2,11 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { storyTypes } from "@/config/story-types";
-import { updatePublicationStory } from "@/features/publications/actions";
+import {
+  selectPublicationDesign,
+  updatePublicationStory,
+} from "@/features/publications/actions";
 import { getPublication } from "@/features/publications/data";
 import type { RenderablePublication } from "@/publication-renderer/contracts";
 import { defaultIdentity } from "@/publication-renderer/identity/default-identity";
 import { BuildNotePreview } from "@/publication-renderer/preview/build-note-preview";
+import { StepByStepPreview } from "@/publication-renderer/preview/step-by-step-preview";
 
 const workflow = ["Idea", "Story", "Format", "Design", "Preview", "Publish"];
 
@@ -27,20 +31,42 @@ export default async function PublicationStudioPage({
     publication.story_type;
   const story = publication.structured_content ?? {};
 
+  const candidateDesign =
+    publication.format === "carousel"
+      ? {
+          key: "step-by-step",
+          version: 1,
+          variant: "editorial-light",
+          name: "Step by Step",
+          description:
+            "Carrusel editorial multipágina construido a partir de la historia estructurada.",
+        }
+      : {
+          key: "build-note",
+          version: 1,
+          variant: "editorial-light",
+          name: "Build Note",
+          description:
+            "Pieza editorial 4:5 para explicar una decisión y el aprendizaje que deja.",
+        };
+
+  const designSelected =
+    publication.archetype_key === candidateDesign.key &&
+    publication.archetype_version === candidateDesign.version &&
+    publication.variant_key === candidateDesign.variant;
+
   const renderablePublication: RenderablePublication = {
     id: publication.id,
     title: publication.title,
     storyType: publication.story_type,
     format: publication.format,
     structuredContent: story,
-    archetypeKey: "build-note",
-    archetypeVersion: 1,
-    variantKey: "editorial-light",
+    archetypeKey: candidateDesign.key,
+    archetypeVersion: candidateDesign.version,
+    variantKey: candidateDesign.variant,
     identity: defaultIdentity,
     assets: [],
   };
-
-  const previewAvailable = publication.format === "single-image";
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -66,7 +92,7 @@ export default async function PublicationStudioPage({
       <div className="mb-7 overflow-x-auto rounded-2xl border border-[var(--border)] bg-white p-3">
         <ol className="flex min-w-max items-center gap-2">
           {workflow.map((step, index) => {
-            const active = previewAvailable ? index <= 4 : index <= 2;
+            const active = index <= 4;
             return (
               <li
                 key={step}
@@ -173,18 +199,16 @@ export default async function PublicationStudioPage({
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                 Design + Preview
               </p>
-              <h2 className="mt-2 text-xl font-semibold">Primer arquetipo visual real</h2>
+              <h2 className="mt-2 text-xl font-semibold">{candidateDesign.name}</h2>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                Build Note v1 utiliza componentes React y tokens visuales propios. Es una dirección provisional para validar el motor, no una identidad cerrada.
+                {candidateDesign.description} La identidad visual sigue siendo provisional mientras validamos el motor.
               </p>
             </div>
 
-            {previewAvailable ? (
-              <BuildNotePreview publication={renderablePublication} />
+            {publication.format === "carousel" ? (
+              <StepByStepPreview publication={renderablePublication} />
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm leading-6 text-[var(--muted)]">
-                El renderer de carrusel se implementará como un arquetipo multipágina. Este primer Build Note valida primero el camino de imagen única.
-              </div>
+              <BuildNotePreview publication={renderablePublication} />
             )}
           </section>
 
@@ -207,27 +231,55 @@ export default async function PublicationStudioPage({
               {publication.format === "carousel" ? "Carrusel PDF" : "Imagen única"}
             </p>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              El contenido sigue separado del diseño. El preview actual se construye a partir de los mismos datos estructurados que guardamos en PostgreSQL.
+              El contenido permanece separado del diseño. Ambos formatos usan los datos estructurados guardados en PostgreSQL.
             </p>
           </section>
 
           <section className="rounded-2xl border border-[var(--border)] bg-white p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Arquetipo de validación
-            </p>
-            <h2 className="mt-3 font-semibold">Build Note · editorial-light</h2>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Diseño
+              </p>
+              {designSelected ? (
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                  Seleccionado
+                </span>
+              ) : null}
+            </div>
+            <h2 className="mt-3 font-semibold">
+              {candidateDesign.name} · {candidateDesign.variant}
+            </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              1080 × 1350 · relación 4:5 · pensado para una publicación orgánica con una sola imagen.
+              1080 × 1350 · relación 4:5 · versión {candidateDesign.version}.
             </p>
+
+            {!designSelected ? (
+              <form action={selectPublicationDesign} className="mt-4">
+                <input type="hidden" name="publicationId" value={publication.id} />
+                <input type="hidden" name="archetypeKey" value={candidateDesign.key} />
+                <input
+                  type="hidden"
+                  name="archetypeVersion"
+                  value={candidateDesign.version}
+                />
+                <input type="hidden" name="variantKey" value={candidateDesign.variant} />
+                <button
+                  type="submit"
+                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-medium transition hover:bg-slate-50"
+                >
+                  Usar este diseño
+                </button>
+              </form>
+            ) : null}
           </section>
 
           <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Próximo paso
+              Estado del flujo
             </p>
-            <h2 className="mt-3 font-semibold">Persistir Design + export</h2>
+            <h2 className="mt-3 font-semibold">Design + Preview operativos</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Después de validar visualmente este arquetipo, guardaremos la selección y su versión en la publicación y ampliaremos el motor hacia carruseles.
+              Imagen única exporta PNG y carrusel exporta PDF. El siguiente bloque será cerrar la identidad y preparar el render final persistente antes de publicar.
             </p>
           </section>
         </aside>
