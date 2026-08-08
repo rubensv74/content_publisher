@@ -2,7 +2,7 @@
 
 ## Estado
 
-Arquitectura base acordada. La estrategia de interfaz y la separación respecto al renderer visual ya están aprobadas. Continúan abiertos varios gates antes de inicializar el código de producto.
+Arquitectura base acordada. La estrategia de interfaz, la separación respecto al renderer visual y la autenticación personal de la V1 ya están aprobadas. Continúan abiertos varios gates antes de inicializar el código de producto.
 
 ## Objetivo arquitectónico
 
@@ -32,6 +32,14 @@ Construir una aplicación web personal, modular y extensible, capaz de gestionar
 - Supabase
 - PostgreSQL
 - Supabase Storage
+
+### Autenticación
+
+- Supabase Auth
+- email + contraseña
+- un único usuario autorizado en V1
+- registro público desactivado
+- RLS y políticas de Storage obligatorias
 
 ### Despliegue
 
@@ -67,15 +75,19 @@ El motor visual utilizará arquetipos y variantes. No se construirá un editor g
 
 La interfaz puede apoyarse en shadcn/ui, pero el renderer final no. Esta frontera evita que una actualización visual de la aplicación modifique accidentalmente la apariencia de las publicaciones.
 
-### 5. Identidad centralizada
+### 5. Seguridad en profundidad
+
+El acceso privado no dependerá solo de rutas protegidas. Datos y recursos deberán estar protegidos también en Supabase mediante RLS y políticas de Storage.
+
+### 6. Identidad centralizada
 
 Firma, tipografías, paletas, series y reglas visuales deben vivir en una configuración central y no duplicarse dentro de cada plantilla.
 
-### 6. Historial desde el principio
+### 7. Historial desde el principio
 
 Ideas, borradores y publicaciones deben conservar suficiente información para que, más adelante, el motor de sugerencias pueda evitar repetición y razonar sobre el historial editorial.
 
-### 7. IA como capa sustituible
+### 8. IA como capa sustituible
 
 La IA no debe estar mezclada con las reglas básicas del producto. Las funciones de asistencia editorial se encapsularán para que el proveedor o modelo pueda cambiar sin rehacer el flujo principal.
 
@@ -142,9 +154,8 @@ Será un productor de ideas y recomendaciones, no un publicador autónomo.
 
 Antes de inicializar el código deben resolverse explícitamente:
 
-1. **AG-002:** mecanismo de autenticación para la V1 personal;
-2. **AG-003:** estrategia técnica de renderizado de imágenes y PDF;
-3. **AG-004:** estructura inicial del modelo de datos.
+1. **AG-003:** estrategia técnica de renderizado de imágenes y PDF;
+2. **AG-004:** estructura inicial del modelo de datos.
 
 La gestión de estado y las librerías de formularios se decidirán solo si el desarrollo demuestra que hacen falta; no se introducirán por defecto.
 
