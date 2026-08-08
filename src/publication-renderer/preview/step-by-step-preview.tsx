@@ -58,7 +58,7 @@ export function StepByStepPreview({
     return () => observer.disconnect();
   }, []);
 
-  async function createPdfBlob() {
+  function getReadyNodes() {
     const nodes = nodeRefs.current.filter(
       (node): node is HTMLDivElement => node !== null,
     );
@@ -67,6 +67,10 @@ export function StepByStepPreview({
       throw new Error("Todavía no están listas todas las páginas del carrusel.");
     }
 
+    return nodes;
+  }
+
+  async function createPdfBlob(nodes = getReadyNodes()) {
     return browserPublicationExporter.exportCarousel(nodes, {
       pixelRatio: 1,
       backgroundColor: publication.identity.palette.background,
@@ -107,13 +111,25 @@ export function StepByStepPreview({
     setPublicUrl(null);
 
     try {
-      const blob = await createPdfBlob();
+      const nodes = getReadyNodes();
+      const [blob, thumbnailBlob] = await Promise.all([
+        createPdfBlob(nodes),
+        browserPublicationExporter.exportImage(nodes[0], {
+          pixelRatio: 1,
+          backgroundColor: publication.identity.palette.background,
+        }),
+      ]);
       const result = await persistFinalRender({
         blob,
         renderType: "pdf",
         width: CANVAS_WIDTH,
         height: CANVAS_HEIGHT,
         pageCount: slides.length,
+        companionThumbnail: {
+          blob: thumbnailBlob,
+          width: CANVAS_WIDTH,
+          height: CANVAS_HEIGHT,
+        },
       });
       setPublicUrl(result.publicUrl);
     } catch (persistError) {
@@ -172,6 +188,9 @@ export function StepByStepPreview({
           <CheckCircle2 className="mt-0.5 shrink-0" size={17} />
           <div>
             <p className="font-medium">Render final guardado.</p>
+            <p className="mt-1 text-xs leading-5">
+              También se ha guardado una miniatura pública de la portada para el documento de Buffer.
+            </p>
             <a
               href={publicUrl}
               target="_blank"
