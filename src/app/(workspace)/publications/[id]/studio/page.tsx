@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { storyTypes } from "@/config/story-types";
 import { updatePublicationStory } from "@/features/publications/actions";
 import { getPublication } from "@/features/publications/data";
+import type { RenderablePublication } from "@/publication-renderer/contracts";
+import { defaultIdentity } from "@/publication-renderer/identity/default-identity";
+import { BuildNotePreview } from "@/publication-renderer/preview/build-note-preview";
 
 const workflow = ["Idea", "Story", "Format", "Design", "Preview", "Publish"];
 
@@ -23,6 +26,21 @@ export default async function PublicationStudioPage({
     storyTypes.find((story) => story.key === publication.story_type)?.label ??
     publication.story_type;
   const story = publication.structured_content ?? {};
+
+  const renderablePublication: RenderablePublication = {
+    id: publication.id,
+    title: publication.title,
+    storyType: publication.story_type,
+    format: publication.format,
+    structuredContent: story,
+    archetypeKey: "build-note",
+    archetypeVersion: 1,
+    variantKey: "editorial-light",
+    identity: defaultIdentity,
+    assets: [],
+  };
+
+  const previewAvailable = publication.format === "single-image";
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -48,7 +66,7 @@ export default async function PublicationStudioPage({
       <div className="mb-7 overflow-x-auto rounded-2xl border border-[var(--border)] bg-white p-3">
         <ol className="flex min-w-max items-center gap-2">
           {workflow.map((step, index) => {
-            const active = index <= 2;
+            const active = previewAvailable ? index <= 4 : index <= 2;
             return (
               <li
                 key={step}
@@ -150,6 +168,26 @@ export default async function PublicationStudioPage({
             />
           </section>
 
+          <section className="rounded-2xl border border-[var(--border)] bg-white p-6">
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Design + Preview
+              </p>
+              <h2 className="mt-2 text-xl font-semibold">Primer arquetipo visual real</h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                Build Note v1 utiliza componentes React y tokens visuales propios. Es una dirección provisional para validar el motor, no una identidad cerrada.
+              </p>
+            </div>
+
+            {previewAvailable ? (
+              <BuildNotePreview publication={renderablePublication} />
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm leading-6 text-[var(--muted)]">
+                El renderer de carrusel se implementará como un arquetipo multipágina. Este primer Build Note valida primero el camino de imagen única.
+              </div>
+            )}
+          </section>
+
           <div className="flex justify-end">
             <button
               type="submit"
@@ -169,7 +207,17 @@ export default async function PublicationStudioPage({
               {publication.format === "carousel" ? "Carrusel PDF" : "Imagen única"}
             </p>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              El formato ya está guardado, pero todavía no hemos elegido el diseño concreto.
+              El contenido sigue separado del diseño. El preview actual se construye a partir de los mismos datos estructurados que guardamos en PostgreSQL.
+            </p>
+          </section>
+
+          <section className="rounded-2xl border border-[var(--border)] bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Arquetipo de validación
+            </p>
+            <h2 className="mt-3 font-semibold">Build Note · editorial-light</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+              1080 × 1350 · relación 4:5 · pensado para una publicación orgánica con una sola imagen.
             </p>
           </section>
 
@@ -177,9 +225,9 @@ export default async function PublicationStudioPage({
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
               Próximo paso
             </p>
-            <h2 className="mt-3 font-semibold">Design</h2>
+            <h2 className="mt-3 font-semibold">Persistir Design + export</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              El siguiente bloque conectará esta historia con los primeros arquetipos visuales React y abrirá la previsualización real.
+              Después de validar visualmente este arquetipo, guardaremos la selección y su versión en la publicación y ampliaremos el motor hacia carruseles.
             </p>
           </section>
         </aside>
