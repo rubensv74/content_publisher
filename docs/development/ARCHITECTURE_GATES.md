@@ -17,6 +17,7 @@ Una elección pasa por gate cuando afecta de forma significativa a uno o varios 
 - renderizado de imágenes o documentos;
 - organización del sistema de componentes visuales;
 - integración con servicios externos;
+- routing y estructura principal del código;
 - despliegue;
 - costes recurrentes relevantes;
 - mantenibilidad a largo plazo.
@@ -46,7 +47,7 @@ Cuando aparezca un gate:
 7. registrar la decisión como ADR;
 8. continuar.
 
-## Estado de gates previos a la inicialización del código
+## Estado de gates
 
 ### AG-001 — Estrategia de estilos y componentes visuales
 
@@ -68,10 +69,16 @@ Decisión: renderizado visual mediante los mismos componentes React usados en pr
 
 ### AG-004 — Modelo de datos inicial
 
+**Estado: Aprobado.**
+
+Decisión: núcleo relacional PostgreSQL + JSONB únicamente para estructuras genuinamente variables, con UUID, `timestamptz`, claves foráneas, RLS y versionado de contenido. Registrado en `ADR-007_HYBRID_RELATIONAL_JSONB_DATA_MODEL.md`.
+
+### AG-005 — Routing y organización inicial del código Next.js
+
 **Estado: Abierto.**
 
-Debe validarse la traducción del modelo conceptual a PostgreSQL antes de crear las primeras migraciones.
+Antes de generar el esqueleto del proyecto debemos decidir si utilizamos App Router o Pages Router y cómo se separará el código de rutas, módulos de dominio, componentes de interfaz y renderer de publicaciones.
 
 ## Regla
 
-No crear migraciones que resuelvan AG-004 de forma implícita antes de que la decisión esté aceptada. Después de cerrar este gate, el proyecto podrá inicializarse siguiendo las decisiones registradas, salvo que aparezca un nuevo cambio arquitectónico.
+No generar todavía el esqueleto Next.js de forma que resuelva AG-005 implícitamente. Una vez cerrado este gate, el proyecto podrá inicializarse siguiendo las decisiones registradas, salvo que aparezca un nuevo cambio arquitectónico.
