@@ -62,16 +62,16 @@ Decisión: Supabase Auth con email + contraseña, un único usuario autorizado, 
 
 ### AG-003 — Renderizado de imágenes y PDF
 
-**Estado: Abierto.**
+**Estado: Aprobado.**
 
-Debe decidirse qué enfoque técnico utilizará el motor para producir los recursos finales.
+Decisión: renderizado visual mediante los mismos componentes React usados en preview, exportación PNG con `html-to-image` y generación de carruseles PDF con `pdf-lib`, todo detrás de un adaptador propio. Registrado en `ADR-006_BROWSER_RENDERING_AND_PDF_EXPORT.md`.
 
 ### AG-004 — Modelo de datos inicial
 
 **Estado: Abierto.**
 
-Debe validarse el modelo conceptual antes de crear las primeras migraciones.
+Debe validarse la traducción del modelo conceptual a PostgreSQL antes de crear las primeras migraciones.
 
 ## Regla
 
-No inicializar librerías o plantillas que resuelvan uno de estos gates de forma implícita antes de que la decisión correspondiente esté aceptada.
+No crear migraciones que resuelvan AG-004 de forma implícita antes de que la decisión esté aceptada. Después de cerrar este gate, el proyecto podrá inicializarse siguiendo las decisiones registradas, salvo que aparezca un nuevo cambio arquitectónico.
