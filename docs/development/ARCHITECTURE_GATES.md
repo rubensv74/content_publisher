@@ -81,21 +81,17 @@ App Router + `src/` + separación por responsabilidades entre rutas, features, U
 
 ### AG-006 — Almacenamiento de renders publicables y URL estable
 
-**Estado: Abierto.**
+**Estado: Aprobado.**
 
-Ha aparecido al llegar al tramo `PREVIEW → PUBLISH`. Buffer necesita una URL pública, directa y estable para recuperar PNG/PDF, mientras los assets fuente de Content Publisher deben permanecer privados.
+Se mantienen los assets fuente en el bucket privado `content-publisher` y se crea `content-publisher-published`, público únicamente para lectura de renders finales PNG/PDF. Escritura y borrado quedan restringidos por RLS al prefijo UUID del usuario. Cada render utiliza una ruta inmutable y una fila propia en `renders`.
 
-La propuesta está documentada en `docs/architecture/proposals/AG-006_PUBLISHABLE_ASSET_STORAGE.md`.
-
-Recomendación actual: **Opción A — mantener los recursos fuente en el bucket privado existente y crear un segundo bucket público de Supabase dedicado exclusivamente a renders finales aprobados**.
-
-No se implementará esta frontera hasta aprobar el gate.
+Decisión registrada en `ADR-009_PUBLIC_PUBLISHABLE_RENDER_STORAGE.md`.
 
 ## Estado global
 
-**La arquitectura base de la aplicación está cerrada, pero AG-006 está abierto antes de implementar la publicación real.**
+**No existe ningún gate abierto en este momento.**
 
-El trabajo que no dependa de esta decisión puede continuar. El tramo que convierta un render en un recurso público estable para Buffer queda bloqueado hasta resolver AG-006.
+El proyecto puede continuar de forma autónoma hasta que aparezca una nueva decisión estructural. La siguiente candidata probable será la estrategia de credenciales de Buffer cuando se implemente la conexión real con el proveedor.
 
 ## Regla
 
