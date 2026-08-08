@@ -1,8 +1,16 @@
 # AG-007 — Autenticación de Buffer y almacenamiento del secreto
 
-- Estado: Propuesta
+- Estado: Aprobada — Opción A
 - Fecha: 2026-08-08
-- Gate: abierto
+- Gate: cerrado
+
+## Decisión
+
+Se aprueba **Opción A — API key personal de Buffer almacenada exclusivamente como variable de entorno server-side**.
+
+La V1 utilizará `BUFFER_API_KEY` en el entorno del servidor. La credencial no se persistirá en PostgreSQL, no se expondrá al navegador y no se versionará en GitHub.
+
+Si Content Publisher evoluciona a un producto multiusuario, esta decisión deberá reabrirse y OAuth 2.0 + PKCE será la candidata natural.
 
 ## Por qué aparece esta decisión ahora
 
@@ -15,7 +23,7 @@ Buffer ofrece actualmente dos mecanismos relevantes:
 1. una API key personal para automatizaciones sobre la propia cuenta;
 2. OAuth 2.0 Authorization Code + PKCE para aplicaciones que actúan en nombre de otros usuarios.
 
-La V1 de Content Publisher es una aplicación privada de un solo usuario, por lo que hay que decidir si utilizamos la credencial personal más simple o construimos desde el principio un flujo OAuth completo.
+La V1 de Content Publisher es una aplicación privada de un solo usuario, por lo que la credencial personal es la solución más simple y proporcionada.
 
 ## Requisitos
 
@@ -41,11 +49,11 @@ Se crea una API key desde Buffer Settings → API y se guarda únicamente como s
 BUFFER_API_KEY=...
 ```
 
-En desarrollo viviría en `.env.local`, nunca versionado. En Vercel se configuraría como variable protegida del proyecto.
+En desarrollo vive en `.env.local`, nunca versionado. En Vercel se configura como variable protegida del proyecto.
 
-Todas las llamadas a Buffer se ejecutarían desde código de servidor de Next.js. El navegador nunca recibiría la clave.
+Todas las llamadas a Buffer se ejecutan desde código de servidor de Next.js. El navegador nunca recibe la clave.
 
-La pantalla de Settings podría consultar mediante una acción de servidor el estado de la conexión y mostrar cuenta/canales disponibles, pero no tendría que almacenar el secreto en PostgreSQL.
+La pantalla de Settings puede consultar mediante código de servidor el estado de la conexión y mostrar cuenta/canales disponibles, pero no almacena el secreto en PostgreSQL.
 
 ### Ventajas
 
@@ -63,7 +71,7 @@ La conexión no es autoservicio desde la UI: la API key se configura en el entor
 
 Para V1 esto es aceptable porque la aplicación es personal y privada.
 
-**Recomendación: Opción A.**
+**Opción aprobada.**
 
 ---
 
@@ -88,7 +96,7 @@ Buffer exige PKCE y, si se solicita `offline_access`, el refresh token debe pers
 - mayor superficie de error y seguridad;
 - complejidad que V1 no necesita.
 
-**No recomendada para una aplicación personal de un solo usuario.**
+**Descartada para V1.**
 
 ---
 
@@ -100,23 +108,20 @@ Es técnicamente posible, pero obligaría a crear una ruta de acceso server-side
 
 Puede tener sentido si en el futuro toda la gestión operativa de secretos se centraliza en Supabase, pero ahora añade una dependencia sin necesidad.
 
-**No recomendada para V1.**
+**Descartada para V1.**
 
 ---
 
-## Recomendación
-
-**Opción A — API key personal de Buffer almacenada como variable de entorno server-side.**
-
-Arquitectura resultante:
+## Arquitectura resultante
 
 ```text
 Browser
   │
   ▼
-Content Publisher / Server Action
+Content Publisher / servidor Next.js
   │
-  ├── lee BUFFER_API_KEY en servidor
+  ├── BUFFER_API_KEY
+  │   variable de entorno privada
   │
   ▼
 Buffer Adapter
@@ -128,18 +133,18 @@ https://api.buffer.com
 LinkedIn
 ```
 
-La frontera de publicación no expondrá la credencial al resto de módulos. `publishing_jobs` seguirá almacenando estado, IDs externos, errores y referencias a renders, pero nunca el API key.
+La frontera de publicación no expone la credencial al resto de módulos. `publishing_jobs` almacena estado, IDs externos, errores y referencias a renders, pero nunca el API key.
 
-## Consecuencias si se aprueba
+## Consecuencias de la decisión
 
-1. añadir `BUFFER_API_KEY` solo a `.env.example` como nombre, nunca como valor;
-2. crear `src/lib/publishing/buffer/` con cliente GraphQL server-only;
-3. implementar una comprobación de conexión y descubrimiento de organización/canales;
-4. mostrar estado de Buffer en Settings;
-5. crear el adaptador para publicar ahora, programar y guardar draft;
-6. usar siempre el `render_id` y URL pública del render final seleccionado;
-7. registrar la respuesta de Buffer en `publishing_jobs` sin almacenar secretos;
-8. manejar `401` como credencial inválida/revocada y solicitar actualizar la variable de entorno.
+1. `.env.example` declara `BUFFER_API_KEY` sin valor;
+2. `src/lib/publishing/buffer/` contiene el cliente GraphQL server-only;
+3. se implementa comprobación de conexión y descubrimiento de organización/canales;
+4. Settings muestra el estado de Buffer;
+5. el adaptador soportará publicar ahora, programar y guardar draft;
+6. se utiliza siempre el `render_id` y la URL pública del render final seleccionado;
+7. la respuesta de Buffer se registra en `publishing_jobs` sin secretos;
+8. un `401` se trata como credencial inválida/revocada y requiere actualizar la variable de entorno.
 
 ## Evolución futura
 
@@ -150,7 +155,8 @@ Si Content Publisher se convierte en aplicación multiusuario, esta decisión de
 - Buffer API — Authentication: https://developers.buffer.com/guides/authentication.html
 - Buffer API — Quick Start: https://developers.buffer.com/guides/getting-started.html
 - Buffer API — REST API Migration: https://developers.buffer.com/guides/rest-migration.html
+- Buffer API — Posts & Scheduling: https://developers.buffer.com/guides/posts-and-scheduling.html
 
-## Decisión pendiente
+## Registro definitivo
 
-Si se aprueba la opción A, la decisión se registrará como el siguiente ADR y comenzará la integración real `RENDER READY → PUBLISH`.
+La decisión se registra como `ADR-010_BUFFER_PERSONAL_API_KEY_SERVER_SIDE.md`.
