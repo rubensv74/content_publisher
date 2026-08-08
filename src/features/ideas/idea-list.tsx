@@ -37,8 +37,12 @@ export function IdeaList({ ideas }: { ideas: IdeaRecord[] }) {
                     {idea.topic}
                   </span>
                 ) : null}
+                {idea.status === "converted" ? (
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700">
+                    Convertida
+                  </span>
+                ) : null}
                 <span>{dateFormatter.format(new Date(idea.created_at))}</span>
-                {idea.status !== "idea" ? <span>· {idea.status}</span> : null}
               </div>
 
               <h2 className="mt-3 text-lg font-semibold tracking-tight">{idea.title}</h2>
