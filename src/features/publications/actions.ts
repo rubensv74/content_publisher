@@ -10,6 +10,7 @@ import {
   type StoryTypeKey,
 } from "@/domain/content";
 import { createClient } from "@/lib/supabase/server";
+import { getArchetypeDefinition } from "@/publication-renderer/archetypes/registry";
 
 import type { PublicationStoryContent } from "./types";
 
@@ -164,7 +165,41 @@ export async function selectPublicationDesign(formData: FormData) {
     redirect("/publications");
   }
 
+  const definition = getArchetypeDefinition(archetypeKey);
+
+  if (
+    !definition ||
+    definition.version !== archetypeVersion ||
+    !definition.variants.includes(variantKey)
+  ) {
+    throw new Error("El diseño seleccionado no pertenece a la biblioteca activa.");
+  }
+
   const { supabase, userId } = await getAuthenticatedContext();
+  const { data: publication, error: publicationError } = await supabase
+    .from("publications")
+    .select("format,story_type")
+    .eq("id", publicationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (publicationError || !publication) {
+    throw new Error(
+      `No se pudo validar la publicación: ${publicationError?.message ?? "no encontrada"}`,
+    );
+  }
+
+  const formatCompatible = definition.supportedFormats.includes(
+    publication.format as PublicationFormat,
+  );
+  const storyCompatible =
+    !definition.supportedStoryTypes ||
+    definition.supportedStoryTypes.includes(publication.story_type as StoryTypeKey);
+
+  if (!formatCompatible || !storyCompatible) {
+    throw new Error("El diseño no es compatible con el formato o la historia seleccionados.");
+  }
+
   const { error } = await supabase
     .from("publications")
     .update({
