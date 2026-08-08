@@ -1,18 +1,12 @@
 import { createBrowserClient } from "@supabase/ssr";
 
-function getRequiredEnv(name: string): string {
-  const value = process.env[name];
+export function createClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+  if (!supabaseUrl || !publishableKey) {
+    throw new Error("Supabase public environment variables are not configured.");
   }
 
-  return value;
-}
-
-export function createClient() {
-  return createBrowserClient(
-    getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    getRequiredEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
-  );
+  return createBrowserClient(supabaseUrl, publishableKey);
 }
