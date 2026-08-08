@@ -83,15 +83,25 @@ App Router + `src/` + separación por responsabilidades entre rutas, features, U
 
 **Estado: Aprobado.**
 
-Se mantienen los assets fuente en el bucket privado `content-publisher` y se crea `content-publisher-published`, público únicamente para lectura de renders finales PNG/PDF. Escritura y borrado quedan restringidos por RLS al prefijo UUID del usuario. Cada render utiliza una ruta inmutable y una fila propia en `renders`.
+Los assets fuente permanecen en `content-publisher` privado y los renders finales PNG/PDF se guardan en `content-publisher-published`, público solo para lectura. Escritura y borrado siguen restringidos por RLS al prefijo UUID del usuario. `ADR-009_PUBLIC_PUBLISHABLE_RENDER_STORAGE.md`.
 
-Decisión registrada en `ADR-009_PUBLIC_PUBLISHABLE_RENDER_STORAGE.md`.
+### AG-007 — Autenticación de Buffer y almacenamiento del secreto
+
+**Estado: Abierto.**
+
+El flujo ya puede alcanzar `RENDER READY`. Para crear publicaciones reales, Buffer exige una credencial Bearer que debe permanecer exclusivamente en servidor.
+
+La propuesta está documentada en `docs/architecture/proposals/AG-007_BUFFER_AUTHENTICATION_AND_SECRET_STORAGE.md`.
+
+Recomendación actual: **Opción A — utilizar la API key personal de Buffer como variable de entorno server-side**, que es el mecanismo recomendado por Buffer para automatizaciones sobre la propia cuenta. OAuth se reservaría para una futura evolución multiusuario.
+
+No se implementará la conexión real con Buffer hasta resolver este gate.
 
 ## Estado global
 
-**No existe ningún gate abierto en este momento.**
+**AG-007 está abierto antes de implementar `RENDER READY → PUBLISH`.**
 
-El proyecto puede continuar de forma autónoma hasta que aparezca una nueva decisión estructural. La siguiente candidata probable será la estrategia de credenciales de Buffer cuando se implemente la conexión real con el proveedor.
+El resto del producto puede continuar en tareas que no dependan de la credencial de Buffer. La integración real con el proveedor queda bloqueada hasta aprobar la estrategia de autenticación.
 
 ## Regla
 
