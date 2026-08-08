@@ -54,15 +54,11 @@ export type BufferCreatedPost = {
 };
 
 type CreatePostPayload = {
-  createPost:
-    | {
-        __typename: "PostActionSuccess";
-        post: BufferCreatedPost;
-      }
-    | {
-        __typename: string;
-        message?: string;
-      };
+  createPost: {
+    __typename: string;
+    post?: BufferCreatedPost;
+    message?: string;
+  };
 };
 
 function buildAsset(media: BufferPublishMedia) {
@@ -130,7 +126,7 @@ export async function createBufferPost(
     },
   });
 
-  if (data.createPost.__typename !== "PostActionSuccess") {
+  if (!data.createPost.post) {
     throw new BufferApiError(
       data.createPost.message ||
         `Buffer rechazó la publicación (${data.createPost.__typename}).`,
