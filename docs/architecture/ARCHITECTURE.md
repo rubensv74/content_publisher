@@ -2,7 +2,7 @@
 
 ## Estado
 
-La arquitectura base necesaria para iniciar la V1 está cerrada. Plataforma, interfaz, autenticación, renderizado, modelo de datos y organización del código fuente ya tienen decisiones registradas.
+La arquitectura base necesaria para iniciar la V1 está cerrada. Plataforma, interfaz, autenticación, renderizado, modelo de datos, organización del código fuente y almacenamiento de renders publicables ya tienen decisiones registradas.
 
 A partir de este punto el desarrollo puede avanzar de forma incremental. Solo se abrirá un nuevo gate cuando aparezca una decisión que cambie de forma relevante dependencias, contratos, fronteras, seguridad, persistencia, despliegue o mantenibilidad.
 
@@ -84,6 +84,31 @@ Reglas de persistencia:
 - versionado explícito de `structured_content`
 - contexto de render suficiente para trazabilidad histórica
 
+### Storage privado y publicable
+
+Se utilizan dos buckets con responsabilidades explícitas:
+
+```text
+content-publisher
+└── privado
+    └── screenshots, imágenes fuente y recursos de trabajo
+
+content-publisher-published
+└── público para lectura
+    └── PNG/PDF finales destinados a publicación
+```
+
+Los renders finales utilizan rutas inmutables:
+
+```text
+{user_id}/{publication_id}/{render_id}.png
+{user_id}/{publication_id}/{render_id}.pdf
+```
+
+La lectura pública permite entregar una URL estable a Buffer. Subida, actualización y borrado siguen restringidos mediante políticas de Storage al usuario autenticado y a su prefijo UUID.
+
+Cada archivo final se corresponde con una fila distinta en `renders`; un render ya utilizado no se sobrescribe.
+
 ### Autenticación
 
 - Supabase Auth
@@ -100,6 +125,7 @@ Reglas de persistencia:
 
 - Buffer como primera capa de integración con LinkedIn
 - la lógica específica de Buffer quedará detrás de una frontera propia de publicación
+- Buffer recibirá únicamente URLs públicas estables de renders finales, nunca URLs temporales de recursos privados
 
 ### Repositorio
 
@@ -147,11 +173,15 @@ Ideas, borradores y publicaciones deben conservar suficiente información para q
 
 Los renders conservarán la versión del arquetipo y el contexto visual relevante con el que fueron generados.
 
-### 11. Routing delgado
+### 11. Separar fuente y publicación
+
+Un asset de trabajo permanece privado. Solo el archivo final aprobado se convierte en recurso público y cada versión final recibe una identidad y ruta propias.
+
+### 12. Routing delgado
 
 Las rutas componen capacidades. La lógica reutilizable vive en módulos funcionales y no queda enterrada en `src/app/`.
 
-### 12. IA como capa sustituible
+### 13. IA como capa sustituible
 
 La IA no debe estar mezclada con las reglas básicas del producto. Las funciones de asistencia editorial se encapsularán para que proveedor o modelo puedan cambiar.
 
@@ -167,6 +197,7 @@ Content Publisher
 ├── Export Adapter
 ├── Asset Library
 ├── Preview
+├── Render Persistence
 ├── Publishing
 ├── Editorial History
 ├── Settings / Identity
@@ -188,6 +219,8 @@ Preview
   ↓
 Generación de recurso
   ↓
+Render final persistido + URL estable
+  ↓
 Publicación / programación
   ↓
 Historial
@@ -203,6 +236,7 @@ Historial
 - `ADR-006_BROWSER_RENDERING_AND_PDF_EXPORT.md`
 - `ADR-007_HYBRID_RELATIONAL_JSONB_DATA_MODEL.md`
 - `ADR-008_NEXTJS_APP_ROUTER_AND_SOURCE_ORGANIZATION.md`
+- `ADR-009_PUBLIC_PUBLISHABLE_RENDER_STORAGE.md`
 
 ## Regla de evolución
 
