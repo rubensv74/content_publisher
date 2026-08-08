@@ -53,32 +53,38 @@ Cuando aparezca un gate:
 
 **Estado: Aprobado.**
 
-Decisión: Tailwind CSS + shadcn/ui para la interfaz de la aplicación y renderer React propio para las publicaciones. Registrado en `ADR-004_UI_STYLE_AND_RENDERER_BOUNDARY.md`.
+Tailwind CSS + shadcn/ui para la interfaz y renderer React propio para las publicaciones. `ADR-004_UI_STYLE_AND_RENDERER_BOUNDARY.md`.
 
 ### AG-002 — Autenticación personal de V1
 
 **Estado: Aprobado.**
 
-Decisión: Supabase Auth con email + contraseña, un único usuario autorizado, registro público desactivado y protección real de datos y Storage mediante políticas. Registrado en `ADR-005_PERSONAL_AUTHENTICATION.md`.
+Supabase Auth con email + contraseña, un único usuario autorizado, registro público desactivado y protección de datos/Storage mediante políticas. `ADR-005_PERSONAL_AUTHENTICATION.md`.
 
 ### AG-003 — Renderizado de imágenes y PDF
 
 **Estado: Aprobado.**
 
-Decisión: renderizado visual mediante los mismos componentes React usados en preview, exportación PNG con `html-to-image` y generación de carruseles PDF con `pdf-lib`, todo detrás de un adaptador propio. Registrado en `ADR-006_BROWSER_RENDERING_AND_PDF_EXPORT.md`.
+Mismo renderer React para preview y archivo final, PNG con `html-to-image` y PDF con `pdf-lib`, detrás de un adaptador propio. `ADR-006_BROWSER_RENDERING_AND_PDF_EXPORT.md`.
 
 ### AG-004 — Modelo de datos inicial
 
 **Estado: Aprobado.**
 
-Decisión: núcleo relacional PostgreSQL + JSONB únicamente para estructuras genuinamente variables, con UUID, `timestamptz`, claves foráneas, RLS y versionado de contenido. Registrado en `ADR-007_HYBRID_RELATIONAL_JSONB_DATA_MODEL.md`.
+Núcleo relacional PostgreSQL + JSONB para estructuras variables, con UUID, `timestamptz`, claves foráneas, RLS y versionado de contenido. `ADR-007_HYBRID_RELATIONAL_JSONB_DATA_MODEL.md`.
 
 ### AG-005 — Routing y organización inicial del código Next.js
 
-**Estado: Abierto.**
+**Estado: Aprobado.**
 
-Antes de generar el esqueleto del proyecto debemos decidir si utilizamos App Router o Pages Router y cómo se separará el código de rutas, módulos de dominio, componentes de interfaz y renderer de publicaciones.
+App Router + `src/` + separación por responsabilidades entre rutas, features, UI compartida y renderer. `ADR-008_NEXTJS_APP_ROUTER_AND_SOURCE_ORGANIZATION.md`.
+
+## Estado global
+
+**No existen gates previos a la inicialización del código pendientes.**
+
+El proyecto puede avanzar de forma autónoma aplicando las decisiones ya registradas. Un nuevo gate solo se abrirá si aparece una elección posterior con impacto arquitectónico real.
 
 ## Regla
 
-No generar todavía el esqueleto Next.js de forma que resuelva AG-005 implícitamente. Una vez cerrado este gate, el proyecto podrá inicializarse siguiendo las decisiones registradas, salvo que aparezca un nuevo cambio arquitectónico.
+No se abrirán gates por decisiones locales y reversibles. Tampoco se introducirán dependencias estructurales por anticipación. Cuando una nueva necesidad implique cambiar una frontera, proveedor, estrategia de seguridad, persistencia, renderizado o despliegue, se documentará un nuevo AG antes de implementar.
