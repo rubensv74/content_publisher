@@ -12,108 +12,135 @@ Los gates iniciales de arquitectura están aprobados y registrados:
 - AG-004 — modelo relacional PostgreSQL + JSONB para estructuras variables.
 - AG-005 — Next.js App Router + `src/` + separación por responsabilidades.
 
-## Cimentación implementada en el repositorio
+## Cimentación implementada
 
-Ya existe una primera base ejecutable del producto con:
+La base ejecutable del producto contiene:
 
-- configuración Next.js + React + TypeScript;
+- Next.js + React + TypeScript;
 - Tailwind CSS;
-- estructura `src/app`, `src/features`, `src/components`, `src/domain`, `src/lib`, `src/config` y `src/publication-renderer`;
+- estructura por responsabilidades bajo `src/`;
 - clientes Supabase para navegador y servidor;
 - renovación de sesión mediante `proxy.ts`;
-- login por email + contraseña;
-- rutas privadas del workspace;
-- bandeja de Ideas conectada a persistencia real;
-- creación, edición, archivado y eliminación de Ideas;
-- acceso desde una Idea al inicio del flujo de conversión a Publication;
-- frontera del renderer y adaptador de exportación;
-- migraciones SQL del modelo V1;
-- políticas RLS sobre las tablas de usuario;
-- bucket privado de Storage con políticas por usuario;
-- workflow de calidad para lint, TypeScript y build.
+- login privado con email + contraseña;
+- shell principal de navegación;
+- frontera independiente del renderer de publicaciones;
+- adaptador de exportación PNG/PDF;
+- modelo PostgreSQL V1 con RLS;
+- Storage privado;
+- workflow de calidad en GitHub.
 
 ## Supabase dedicado
 
-Se ha creado un proyecto Supabase independiente para Content Publisher:
+Existe un proyecto Supabase independiente para Content Publisher:
 
 - nombre: `Content Publisher`;
 - región: `eu-west-1`;
 - coste confirmado al crearlo: 0 al mes;
-- estado al finalizar la creación: `ACTIVE_HEALTHY`.
+- proyecto sano tras la creación.
 
-No se reutiliza el proyecto `QuizMillionApp`.
+Migraciones aplicadas:
 
-## Migraciones aplicadas
+1. `initial_schema` — tablas, relaciones, restricciones, triggers, RLS y Storage privado;
+2. `add_fk_indexes` — índices de cobertura recomendados para claves foráneas.
 
-Se han aplicado correctamente en el proyecto Supabase:
+Los advisors de seguridad no devolvieron avisos después de aplicar la cimentación. Los avisos de índices todavía no utilizados son esperables mientras la base no tenga tráfico representativo.
 
-1. `initial_schema` — tablas V1, relaciones, restricciones, triggers, RLS y Storage privado;
-2. `add_fk_indexes` — índices de cobertura recomendados por los advisors para claves foráneas.
+## Autenticación validada
 
-Los mismos cambios se conservan versionados en `supabase/migrations/` dentro del repositorio.
+Se ha creado el usuario personal autorizado en Supabase Auth.
 
-## Advisors de Supabase
+La comprobación del backend confirma:
 
-### Seguridad
+- existe una única cuenta de usuario;
+- la cuenta está confirmada;
+- las políticas RLS permiten a ese usuario trabajar únicamente con sus propios datos;
+- una prueba de inserción/lectura autenticada se ejecutó dentro de una transacción y se revirtió para no dejar datos de prueba.
 
-La revisión posterior a la migración no devolvió avisos de seguridad.
+La contraseña del usuario no se almacena ni se comparte con el repositorio.
 
-### Rendimiento
+## Ideas — primer módulo funcional
 
-La primera revisión detectó claves foráneas sin índice de cobertura. Se añadió una segunda migración con los índices correspondientes.
+La bandeja de Ideas ya dispone de persistencia real y operaciones básicas:
 
-Los avisos de índices todavía no utilizados son esperables en una base recién creada y sin tráfico real; no se eliminarán antes de disponer de uso representativo.
+- crear;
+- listar;
+- editar;
+- archivar;
+- eliminar;
+- distinguir visualmente una idea ya convertida;
+- iniciar la conversión de una Idea en Publication.
 
-## Usuario de autenticación
+Las operaciones se ejecutan mediante Server Actions y respetan la sesión autenticada y RLS.
 
-Existe exactamente un usuario en Supabase Auth y está confirmado.
+## Primer vertical slice de Content Studio
 
-Esto coincide con la decisión de V1 de utilizar una única cuenta personal y mantener el registro público desactivado.
+Se ha implementado el primer flujo funcional:
 
-## Validación RLS
+`IDEA → STORY → FORMAT → CONTENT STUDIO`
 
-Se ejecutó una prueba transaccional con el rol `authenticated` y el `sub` del usuario real:
+Desde una Idea se puede abrir `/publications/new` y definir:
 
-- inserción temporal en `public.ideas` permitida para el propio usuario;
-- lectura de esa fila permitida;
-- rollback posterior para no dejar datos de prueba.
+- título de trabajo;
+- tema;
+- tipo de historia;
+- problema o contexto;
+- intentos previos;
+- decisión o solución;
+- aprendizaje;
+- idea transferible;
+- formato inicial: imagen única o carrusel.
 
-La prueba confirma que la política RLS principal de Ideas funciona para una sesión autenticada.
+Al crear el borrador:
 
-## Tipos TypeScript
+- se inserta una fila real en `publications`;
+- queda vinculada a la Idea de origen;
+- la Idea pasa a estado `converted`;
+- se abre el primer editor de Content Studio.
 
-La generación de tipos desde el esquema real de Supabase funciona y refleja las entidades principales de V1: `identity_profiles`, `ideas`, `publications`, `assets`, `publication_assets`, `renders` y `publishing_jobs`.
+Content Studio permite actualmente revisar y guardar la historia estructurada y un borrador del caption de LinkedIn. La biblioteca de Publicaciones lista los borradores existentes y permite reabrirlos.
 
-## Validación técnica de aplicación
+## Validación del vertical slice en base de datos
 
-El primer ciclo de CI detectó una incompatibilidad de tipos al construir el `Blob` final del PDF. El defecto fue corregido normalizando los bytes devueltos por `pdf-lib` antes de crear el `Blob`.
+Se ha ejecutado una prueba transaccional bajo el rol autenticado real que comprobó:
 
-Los runs anteriores a esa corrección permanecen en rojo como histórico. Los commits posteriores realizados mediante la integración de GitHub no han generado nuevos runs automáticos, por lo que el CI verde aún debe confirmarse desde un checkout normal o un nuevo push convencional.
+- creación de Idea;
+- creación de Publication vinculada;
+- conversión de estado de la Idea;
+- actualización posterior del borrador de publicación.
 
-## Entorno de ejecución pendiente
+El resultado fue correcto y la transacción se revirtió al finalizar, por lo que no quedaron registros de prueba.
 
-La aplicación necesita estas variables de entorno fuera del repositorio:
+## Vercel
 
-- `NEXT_PUBLIC_SUPABASE_URL`;
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+Se ha iniciado un primer deployment de preview de la aplicación para comprobar el acceso desde navegador con el usuario real de Supabase.
 
-El proyecto y la clave publicable existen y han sido recuperados desde Supabase, pero no se guardarán en GitHub. Deben configurarse en `.env.local` para desarrollo local y, cuando exista el proyecto Vercel, como variables de entorno de Vercel.
+Preview creado por la integración de despliegue:
 
-La contraseña del usuario tampoco se almacena ni se comparte con el repositorio.
+`https://content-publisher-d3spxd9gk-seijoruben-5081s-projects.vercel.app`
 
-## Estado del despliegue
+Inspector devuelto por Vercel:
 
-La conexión a Vercel está disponible, pero todavía no existe un proyecto Vercel asociado a `content_publisher`. El conector de despliegue disponible requiere recibir los archivos del proyecto y no puede importar directamente este repositorio privado de GitHub ni configurar variables de entorno por sí solo.
+`https://vercel.com/seijoruben-5081s-projects/content-publisher/FKKckWwSkczwZsnKW1uHKaMaaWJx`
 
-Por tanto, el despliegue real queda pendiente de vincular el repositorio con Vercel o ejecutar el proyecto localmente con sus variables de entorno.
+Las variables públicas de Supabase se suministraron únicamente al snapshot de despliegue y no se guardaron en GitHub. La publishable key de Supabase está diseñada para uso cliente y la protección efectiva de datos depende de RLS.
 
-## Próximo objetivo funcional
+La integración de Vercel devolvió el deployment como `INITIALIZING`, pero las operaciones posteriores de consulta de estado no localizaron todavía ese deployment en el listado del equipo. Por tanto, no se considerará validado hasta abrir el preview y completar el login manualmente.
 
-1. validar login real desde una instancia ejecutándose con las variables de entorno;
-2. verificar CRUD de Ideas desde la interfaz;
-3. completar la conversión de Idea a Publication;
-4. iniciar el primer flujo vertical de Content Studio;
-5. generar el primer preview y PNG real;
-6. comenzar una publicación de prueba de extremo a extremo.
+Este deployment de preview es una instantánea operativa para validación; no sustituye la futura conexión Git continua entre GitHub y Vercel.
 
-No se añadirá una nueva dependencia estructural ni se modificará la arquitectura sin abrir un nuevo gate si la decisión tiene impacto relevante.
+## Calidad técnica
+
+El primer ciclo de CI histórico detectó una incompatibilidad de tipos al crear el `Blob` PDF. El problema se corrigió normalizando los bytes de `pdf-lib` antes de construir el `Blob`.
+
+Los runs antiguos permanecen en rojo como histórico. Las escrituras realizadas mediante la integración de GitHub no han generado nuevos runs visibles de Actions, por lo que el siguiente build de Vercel o una ejecución local seguirá siendo una validación necesaria del estado actual completo.
+
+## Siguiente objetivo
+
+1. abrir el preview de Vercel e iniciar sesión con el usuario personal;
+2. crear una Idea desde la interfaz;
+3. editarla y convertirla en publicación;
+4. guardar la historia en Content Studio;
+5. comenzar el bloque `DESIGN` conectando el contenido estructurado con el primer arquetipo React;
+6. después habilitar `PREVIEW` y probar el exportador PNG/PDF con contenido real.
+
+No se modificará la arquitectura aprobada sin abrir un nuevo gate si aparece una decisión estructural relevante.
