@@ -87,21 +87,15 @@ Los assets fuente permanecen en `content-publisher` privado y los renders finale
 
 ### AG-007 — Autenticación de Buffer y almacenamiento del secreto
 
-**Estado: Abierto.**
+**Estado: Aprobado.**
 
-El flujo ya puede alcanzar `RENDER READY`. Para crear publicaciones reales, Buffer exige una credencial Bearer que debe permanecer exclusivamente en servidor.
-
-La propuesta está documentada en `docs/architecture/proposals/AG-007_BUFFER_AUTHENTICATION_AND_SECRET_STORAGE.md`.
-
-Recomendación actual: **Opción A — utilizar la API key personal de Buffer como variable de entorno server-side**, que es el mecanismo recomendado por Buffer para automatizaciones sobre la propia cuenta. OAuth se reservaría para una futura evolución multiusuario.
-
-No se implementará la conexión real con Buffer hasta resolver este gate.
+La V1 utiliza una API key personal de Buffer en `BUFFER_API_KEY`, disponible exclusivamente en servidor. La credencial no se almacena en PostgreSQL, no llega al navegador y no se versiona. OAuth 2.0 + PKCE queda reservado para una futura evolución multiusuario. `ADR-010_BUFFER_PERSONAL_API_KEY_SERVER_SIDE.md`.
 
 ## Estado global
 
-**AG-007 está abierto antes de implementar `RENDER READY → PUBLISH`.**
+**No hay un gate de arquitectura abierto en este momento.**
 
-El resto del producto puede continuar en tareas que no dependan de la credencial de Buffer. La integración real con el proveedor queda bloqueada hasta aprobar la estrategia de autenticación.
+El desarrollo puede continuar con la integración `RENDER READY → PUBLISH` aplicando las decisiones aprobadas. Un nuevo gate solo se abrirá si aparece una elección posterior con impacto arquitectónico real.
 
 ## Regla
 
