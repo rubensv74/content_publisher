@@ -144,3 +144,41 @@ export async function updatePublicationStory(formData: FormData) {
   revalidatePath("/publications");
   revalidatePath(`/publications/${publicationId}/studio`);
 }
+
+export async function selectPublicationDesign(formData: FormData) {
+  const publicationId = formData.get("publicationId");
+  const archetypeKey = formData.get("archetypeKey");
+  const variantKey = formData.get("variantKey");
+  const archetypeVersion = Number(formData.get("archetypeVersion"));
+
+  if (
+    typeof publicationId !== "string" ||
+    !publicationId ||
+    typeof archetypeKey !== "string" ||
+    !archetypeKey ||
+    typeof variantKey !== "string" ||
+    !variantKey ||
+    !Number.isInteger(archetypeVersion) ||
+    archetypeVersion < 1
+  ) {
+    redirect("/publications");
+  }
+
+  const { supabase, userId } = await getAuthenticatedContext();
+  const { error } = await supabase
+    .from("publications")
+    .update({
+      archetype_key: archetypeKey,
+      archetype_version: archetypeVersion,
+      variant_key: variantKey,
+    })
+    .eq("id", publicationId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`No se pudo guardar el diseño: ${error.message}`);
+  }
+
+  revalidatePath("/publications");
+  revalidatePath(`/publications/${publicationId}/studio`);
+}
