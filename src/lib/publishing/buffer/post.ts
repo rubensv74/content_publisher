@@ -13,12 +13,9 @@ const CREATE_POST_MUTATION = `
           shareMode
         }
       }
-      ... on InvalidInputError { message }
-      ... on UnauthorizedError { message }
-      ... on UnexpectedError { message }
-      ... on RestProxyError { message }
-      ... on LimitReachedError { message }
-      ... on NotFoundError { message }
+      ... on MutationError {
+        message
+      }
     }
   }
 `;
