@@ -1,21 +1,16 @@
 # AG-005 — Routing y organización inicial del código Next.js
 
-- Estado: Proposed
+- Estado: Aprobada — Opción A
 - Fecha: 2026-08-08
-- Gate: requiere aprobación antes de generar el esqueleto de la aplicación
+- Gate: cerrado
 
-## Por qué aparece esta decisión ahora
+## Decisión
 
-Los cuatro gates previos ya están cerrados. Podemos empezar a generar código, pero `create-next-app` puede decidir de forma implícita dos cosas que afectan a toda la estructura futura:
+Se aprueba **App Router + `src/` + organización por responsabilidades**.
 
-1. si usamos **App Router** o **Pages Router**;
-2. si dejamos el código mezclado en la raíz o lo organizamos dentro de `src/` con fronteras claras entre rutas, módulos del producto, UI y renderer de publicaciones.
+La aplicación utilizará App Router y mantendrá el código principal dentro de `src/`, con fronteras explícitas entre routing, capacidades del producto, interfaz de aplicación y motor visual de publicaciones.
 
-Para Content Publisher esta separación importa especialmente porque ya hemos decidido que la interfaz de la aplicación y el motor de publicaciones deben evolucionar de manera independiente.
-
-## Opción A — App Router + `src/` + organización por responsabilidades — recomendada
-
-### Estructura conceptual
+## Estructura acordada
 
 ```text
 content_publisher/
@@ -40,12 +35,12 @@ content_publisher/
 │   │   ├── ui/                  # shadcn/ui y componentes genéricos
 │   │   └── application/         # componentes compartidos de la app
 │   │
-│   ├── lib/                     # clientes y utilidades técnicas
+│   ├── lib/
 │   │   ├── supabase/
 │   │   └── publishing/
 │   │
-│   ├── domain/                  # tipos y contratos compartidos del dominio
-│   └── config/                  # catálogos y configuración versionada
+│   ├── domain/
+│   └── config/
 │
 ├── public/
 ├── supabase/
@@ -53,128 +48,51 @@ content_publisher/
 └── archivos de configuración
 ```
 
-La estructura física podrá ajustarse localmente mientras se mantengan estas fronteras. No se busca crear carpetas por crear, sino evitar que routing, dominio, UI y renderer terminen mezclados.
+La estructura física podrá evolucionar localmente mientras se mantengan estas fronteras. No se crearán carpetas sin responsabilidad clara.
 
-### Por qué App Router
+## Reglas acordadas
 
-La documentación actual de Next.js presenta App Router como el router basado en archivos que utiliza las capacidades actuales de React, incluyendo Server Components, Suspense y Server Functions.
+### `src/app/`
 
-Para Content Publisher esto encaja con el reparto natural de responsabilidades:
+Será principalmente la capa de rutas, layouts y composición de páginas. La lógica reutilizable de Ideas, Publications, Assets, Publishing o Identity no deberá quedar enterrada dentro de rutas.
 
-- páginas y layouts pueden ejecutarse en servidor por defecto;
-- interactividad se añade solo en componentes cliente cuando haga falta;
-- credenciales y operaciones sensibles pueden permanecer en servidor;
-- la aplicación puede combinar lectura de datos server-side con editores interactivos en cliente.
+### `src/features/`
 
-### Por qué `src/`
+Agrupará las capacidades funcionales del producto. Cada feature podrá contener componentes, acciones, validaciones y acceso a datos propios cuando aparezcan de forma justificada.
 
-Next.js soporta oficialmente `src/app` y recomienda esta organización cuando se quiere separar el código de aplicación de archivos de configuración que viven en la raíz.
+### `src/components/`
 
-En este proyecto además deja la raíz limpia para:
+Contendrá la interfaz compartida de la aplicación. `src/components/ui/` será la zona de componentes shadcn/ui.
 
-- `docs/`;
-- `supabase/`;
-- `public/`;
-- configuración de Next.js, TypeScript, ESLint y dependencias.
+### `src/publication-renderer/`
 
-### Regla de routing
-
-`src/app/` será principalmente una capa de rutas y composición.
-
-No deberá convertirse en el lugar donde vive toda la lógica del producto.
-
-Una página podrá importar una capacidad desde `features/`, pero la lógica reutilizable de Ideas, Publications, Assets o Publishing no deberá quedar enterrada dentro de carpetas de rutas.
-
-### Regla del renderer
-
-`src/publication-renderer/` tendrá una frontera explícita:
+Mantendrá la frontera ya aprobada:
 
 - no importará componentes desde `src/components/ui/`;
 - no dependerá de shadcn/ui;
-- consumirá contratos del dominio, assets y tokens propios;
-- será el mismo sistema usado por preview y exportación.
+- consumirá contratos de dominio, assets y tokens propios;
+- será el mismo renderer utilizado por preview y exportación.
 
-Esto aplica directamente ADR-004 y ADR-006.
+### Server y Client Components
 
-## Opción B — App Router con estructura mínima en raíz
+Los componentes serán de servidor por defecto. `"use client"` se utilizará únicamente cuando exista una necesidad concreta, como estado local, eventos de usuario, APIs del navegador, exportación visual o editores interactivos.
 
-Ejemplo:
+## Alternativas descartadas
 
-```text
-app/
-components/
-lib/
-public/
-```
+### App Router con estructura mínima en raíz
 
-### Ventajas
+Se descarta porque facilitaría la mezcla progresiva de routing, lógica funcional, UI y renderer a medida que el producto crezca.
 
-- arranque muy sencillo;
-- menos carpetas al principio;
-- coincide con muchos ejemplos básicos de Next.js.
+### Pages Router
 
-### Problemas para este proyecto
+Se descarta para un proyecto nuevo porque no existe ninguna necesidad de compatibilidad que justifique comenzar con el modelo anterior de routing.
 
-- `components/` tendería a mezclar UI de aplicación y renderer;
-- `lib/` puede convertirse rápidamente en un cajón de sastre;
-- la lógica del producto puede acabar dentro de rutas;
-- más adelante habría que reorganizar cuando Ideas, Content Studio y Publication Renderer crezcan.
+## Consecuencias
 
-Es viable para una aplicación pequeña, pero Content Publisher ya tiene suficientes módulos definidos como para justificar fronteras desde el inicio.
-
-## Opción C — Pages Router
-
-### Ventajas
-
-- modelo conocido y estable;
-- abundante documentación histórica;
-- válido para aplicaciones Next.js existentes que ya lo utilicen.
-
-### Problemas para un proyecto nuevo
-
-- no aprovecha el modelo actual de App Router y Server Components;
-- introduciríamos una arquitectura anterior sin tener una necesidad de compatibilidad;
-- una futura migración a App Router aportaría trabajo sin valor funcional.
-
-No se recomienda para un proyecto nuevo en 2026.
-
-## Recomendación
-
-**Opción A — App Router + `src/` + organización por responsabilidades.**
-
-No queremos diseñar una arquitectura de carpetas compleja antes de tener código. Queremos únicamente fijar cuatro fronteras que ya sabemos que son importantes:
-
-```text
-Routing / composición        → src/app
-Capacidades del producto     → src/features
-UI de la aplicación          → src/components
-Motor visual publicable      → src/publication-renderer
-```
-
-El resto podrá evolucionar de forma incremental.
-
-## Server y Client Components
-
-Se seguirá la regla de Next.js de mantener componentes de servidor por defecto y utilizar `"use client"` solo cuando exista una razón concreta, como:
-
-- estado local;
-- eventos de usuario;
-- APIs del navegador;
-- exportación mediante `html-to-image`;
-- editores interactivos.
-
-No se marcarán árboles completos como cliente por comodidad.
-
-## Qué no decide este gate
-
-Este gate no obliga todavía a elegir:
-
-- una librería global de estado;
-- una librería de formularios;
-- una herramienta de tests end-to-end;
-- una estrategia de caché avanzada.
-
-Esas decisiones solo aparecerán si una necesidad real del producto las justifica.
+- La raíz del repositorio permanecerá limpia para documentación, Supabase, recursos y configuración.
+- La interfaz de la aplicación y las publicaciones exportables tendrán fronteras físicas visibles.
+- El routing no se convertirá en el lugar por defecto para alojar lógica de negocio.
+- La estructura podrá crecer de forma incremental sin necesidad de una reorganización temprana.
 
 ## Fuentes revisadas
 
@@ -184,6 +102,6 @@ Esas decisiones solo aparecerán si una necesidad real del producto las justific
 - Next.js — Server and Client Components: https://nextjs.org/docs/app/getting-started/server-and-client-components
 - Next.js — `src` directory: https://nextjs.org/docs/pages/api-reference/file-conventions/src-folder
 
-## Decisión pendiente
+## Registro definitivo
 
-Aprobar A, B o C antes de generar el proyecto base.
+La decisión se registra como `ADR-008_NEXTJS_APP_ROUTER_AND_SOURCE_ORGANIZATION.md`.
