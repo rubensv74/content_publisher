@@ -2,7 +2,7 @@
 
 ## Estado
 
-La arquitectura base necesaria para iniciar la V1 está cerrada. Plataforma, interfaz, autenticación, renderizado, modelo de datos, organización del código fuente y almacenamiento de renders publicables ya tienen decisiones registradas.
+La arquitectura base necesaria para iniciar la V1 está cerrada. Plataforma, interfaz, autenticación, renderizado, modelo de datos, organización del código fuente, almacenamiento de renders publicables y autenticación con Buffer ya tienen decisiones registradas.
 
 A partir de este punto el desarrollo puede avanzar de forma incremental. Solo se abrirá un nuevo gate cuando aparezca una decisión que cambie de forma relevante dependencias, contratos, fronteras, seguridad, persistencia, despliegue o mantenibilidad.
 
@@ -124,8 +124,12 @@ Cada archivo final se corresponde con una fila distinta en `renders`; un render 
 ### Publicación
 
 - Buffer como primera capa de integración con LinkedIn
-- la lógica específica de Buffer quedará detrás de una frontera propia de publicación
-- Buffer recibirá únicamente URLs públicas estables de renders finales, nunca URLs temporales de recursos privados
+- GraphQL endpoint `https://api.buffer.com`
+- API key personal en `BUFFER_API_KEY`, exclusivamente server-side
+- la credencial no se almacena en PostgreSQL ni se expone al navegador
+- la lógica específica de Buffer queda detrás de una frontera propia de publicación
+- Buffer recibe únicamente URLs públicas estables de renders finales, nunca URLs temporales de recursos privados
+- `publishing_jobs` registra estado, render utilizado, identificadores externos y errores, pero nunca secretos
 
 ### Repositorio
 
@@ -177,11 +181,15 @@ Los renders conservarán la versión del arquetipo y el contexto visual relevant
 
 Un asset de trabajo permanece privado. Solo el archivo final aprobado se convierte en recurso público y cada versión final recibe una identidad y ruta propias.
 
-### 12. Routing delgado
+### 12. Secretos fuera del dominio y del cliente
+
+Las credenciales de proveedores externos se mantienen exclusivamente en servidor. La V1 no persiste la API key de Buffer en la base de datos y ningún payload de dominio debe contenerla.
+
+### 13. Routing delgado
 
 Las rutas componen capacidades. La lógica reutilizable vive en módulos funcionales y no queda enterrada en `src/app/`.
 
-### 13. IA como capa sustituible
+### 14. IA como capa sustituible
 
 La IA no debe estar mezclada con las reglas básicas del producto. Las funciones de asistencia editorial se encapsularán para que proveedor o modelo puedan cambiar.
 
@@ -199,6 +207,7 @@ Content Publisher
 ├── Preview
 ├── Render Persistence
 ├── Publishing
+│   └── Buffer Adapter
 ├── Editorial History
 ├── Settings / Identity
 └── Future: Suggestion Engine
@@ -221,7 +230,9 @@ Generación de recurso
   ↓
 Render final persistido + URL estable
   ↓
-Publicación / programación
+Buffer
+  ↓
+LinkedIn
   ↓
 Historial
 ```
@@ -237,6 +248,7 @@ Historial
 - `ADR-007_HYBRID_RELATIONAL_JSONB_DATA_MODEL.md`
 - `ADR-008_NEXTJS_APP_ROUTER_AND_SOURCE_ORGANIZATION.md`
 - `ADR-009_PUBLIC_PUBLISHABLE_RENDER_STORAGE.md`
+- `ADR-010_BUFFER_PERSONAL_API_KEY_SERVER_SIDE.md`
 
 ## Regla de evolución
 
