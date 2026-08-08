@@ -2,7 +2,7 @@
 
 ## Estado
 
-Arquitectura base acordada. La estrategia de interfaz, la separación respecto al renderer visual y la autenticación personal de la V1 ya están aprobadas. Continúan abiertos varios gates antes de inicializar el código de producto.
+Arquitectura base acordada. La estrategia de interfaz, la separación respecto al renderer visual, la autenticación personal y el mecanismo de renderizado de la V1 ya están aprobados. Queda abierto el modelo de datos inicial antes de comenzar las migraciones.
 
 ## Objetivo arquitectónico
 
@@ -26,6 +26,14 @@ Construir una aplicación web personal, modular y extensible, capaz de gestionar
 - componentes React propios
 - tokens visuales propios
 - sin dependencia de shadcn/ui dentro del árbol de renderizado final
+
+### Exportación visual
+
+- preview y archivo final parten del mismo renderer React
+- `html-to-image` para PNG
+- `pdf-lib` para carruseles PDF a partir de las páginas PNG
+- adaptador de exportación propio que aísla las librerías de los arquetipos
+- estado `readyToExport` antes de permitir la generación final
 
 ### Datos y almacenamiento
 
@@ -75,19 +83,23 @@ El motor visual utilizará arquetipos y variantes. No se construirá un editor g
 
 La interfaz puede apoyarse en shadcn/ui, pero el renderer final no. Esta frontera evita que una actualización visual de la aplicación modifique accidentalmente la apariencia de las publicaciones.
 
-### 5. Seguridad en profundidad
+### 5. Separar renderizado y exportación
+
+El arquetipo define qué se ve. El adaptador de exportación define cómo se convierte esa vista en PNG o PDF. Los arquetipos no conocerán `html-to-image` ni `pdf-lib`.
+
+### 6. Seguridad en profundidad
 
 El acceso privado no dependerá solo de rutas protegidas. Datos y recursos deberán estar protegidos también en Supabase mediante RLS y políticas de Storage.
 
-### 6. Identidad centralizada
+### 7. Identidad centralizada
 
 Firma, tipografías, paletas, series y reglas visuales deben vivir en una configuración central y no duplicarse dentro de cada plantilla.
 
-### 7. Historial desde el principio
+### 8. Historial desde el principio
 
 Ideas, borradores y publicaciones deben conservar suficiente información para que, más adelante, el motor de sugerencias pueda evitar repetición y razonar sobre el historial editorial.
 
-### 8. IA como capa sustituible
+### 9. IA como capa sustituible
 
 La IA no debe estar mezclada con las reglas básicas del producto. Las funciones de asistencia editorial se encapsularán para que el proveedor o modelo pueda cambiar sin rehacer el flujo principal.
 
@@ -100,6 +112,7 @@ Content Publisher
 ├── Content Studio
 ├── Design Library
 ├── Visual Renderer
+├── Export Adapter
 ├── Asset Library
 ├── Preview
 ├── Publishing
@@ -140,7 +153,11 @@ Consume contenido estructurado y configuración visual, pero no modifica el sign
 
 ### Renderizado
 
-Convierte una composición en un recurso final, como imagen o documento. No puede depender de componentes de shadcn/ui.
+Convierte contenido + diseño + identidad + assets en una representación visual React. No puede depender de componentes de shadcn/ui.
+
+### Exportación
+
+Convierte el resultado visual a PNG o PDF. En V1 usa `html-to-image` y `pdf-lib`, pero esas dependencias quedan aisladas detrás de una interfaz propia.
 
 ### Publicación
 
@@ -152,11 +169,10 @@ Será un productor de ideas y recomendaciones, no un publicador autónomo.
 
 ## Decisiones todavía abiertas
 
-Antes de inicializar el código deben resolverse explícitamente:
+Antes de crear las primeras migraciones debe resolverse explícitamente:
 
-1. **AG-003:** estrategia técnica de renderizado de imágenes y PDF;
-2. **AG-004:** estructura inicial del modelo de datos.
+1. **AG-004:** estructura inicial del modelo de datos.
 
 La gestión de estado y las librerías de formularios se decidirán solo si el desarrollo demuestra que hacen falta; no se introducirán por defecto.
 
-Estas decisiones no deben aparecer de manera accidental mediante un generador de proyecto o una plantilla de terceros.
+Las elecciones posteriores que cambien dependencias, contratos o fronteras relevantes deberán abrir un nuevo gate antes de implementarse.
