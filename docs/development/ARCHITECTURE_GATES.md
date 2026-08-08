@@ -46,24 +46,32 @@ Cuando aparezca un gate:
 7. registrar la decisión como ADR;
 8. continuar.
 
-## Gates abiertos antes de inicializar el código
+## Estado de gates previos a la inicialización del código
 
 ### AG-001 — Estrategia de estilos y componentes visuales
 
-Debe decidirse cómo se construirá la interfaz y el sistema visual en React/Next.js.
+**Estado: Aprobado.**
+
+Decisión: Tailwind CSS + shadcn/ui para la interfaz de la aplicación y renderer React propio para las publicaciones. Registrado en `ADR-004_UI_STYLE_AND_RENDERER_BOUNDARY.md`.
 
 ### AG-002 — Autenticación personal de V1
 
-Debe decidirse el mecanismo de acceso privado.
+**Estado: Abierto.**
+
+Debe decidirse el mecanismo de acceso privado antes de implementar autenticación o persistencia protegida.
 
 ### AG-003 — Renderizado de imágenes y PDF
+
+**Estado: Abierto.**
 
 Debe decidirse qué enfoque técnico utilizará el motor para producir los recursos finales.
 
 ### AG-004 — Modelo de datos inicial
 
+**Estado: Abierto.**
+
 Debe validarse el modelo conceptual antes de crear las primeras migraciones.
 
 ## Regla
 
-No inicializar librerías o plantillas que resuelvan uno de estos gates de forma implícita antes de que la decisión esté aceptada.
+No inicializar librerías o plantillas que resuelvan uno de estos gates de forma implícita antes de que la decisión correspondiente esté aceptada.
