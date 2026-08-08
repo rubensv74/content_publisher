@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "usernamehw.errorlens",
+    "github.vscode-pull-request-github"
+  ]
+}
