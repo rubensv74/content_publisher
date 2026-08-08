@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,13 +24,15 @@ async function getAuthenticatedUserId() {
   return { supabase, userId };
 }
 
+function optionalText(value: FormDataEntryValue | null) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 export async function createIdea(
   _previousState: CreateIdeaState,
   formData: FormData,
 ): Promise<CreateIdeaState> {
   const title = formData.get("title");
-  const topic = formData.get("topic");
-  const notes = formData.get("notes");
 
   if (typeof title !== "string" || !title.trim()) {
     return { ...initialError, error: "La idea necesita un título." };
@@ -44,8 +47,8 @@ export async function createIdea(
   const { error } = await supabase.from("ideas").insert({
     user_id: userId,
     title: title.trim(),
-    topic: typeof topic === "string" && topic.trim() ? topic.trim() : null,
-    notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+    topic: optionalText(formData.get("topic")),
+    notes: optionalText(formData.get("notes")),
     source_type: "manual",
     status: "idea",
   });
@@ -56,6 +59,43 @@ export async function createIdea(
 
   revalidatePath("/ideas");
   return { error: null, success: true };
+}
+
+export async function updateIdea(formData: FormData) {
+  const ideaId = formData.get("ideaId");
+  const title = formData.get("title");
+
+  if (
+    typeof ideaId !== "string" ||
+    !ideaId ||
+    typeof title !== "string" ||
+    !title.trim()
+  ) {
+    redirect("/ideas");
+  }
+
+  const { supabase, userId } = await getAuthenticatedUserId();
+
+  if (!userId) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase
+    .from("ideas")
+    .update({
+      title: title.trim(),
+      topic: optionalText(formData.get("topic")),
+      notes: optionalText(formData.get("notes")),
+    })
+    .eq("id", ideaId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`No se pudo actualizar la idea: ${error.message}`);
+  }
+
+  revalidatePath("/ideas");
+  redirect("/ideas");
 }
 
 export async function archiveIdea(formData: FormData) {
@@ -71,11 +111,41 @@ export async function archiveIdea(formData: FormData) {
     return;
   }
 
-  await supabase
+  const { error } = await supabase
     .from("ideas")
     .update({ status: "archived", archived_at: new Date().toISOString() })
     .eq("id", ideaId)
     .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`No se pudo archivar la idea: ${error.message}`);
+  }
+
+  revalidatePath("/ideas");
+}
+
+export async function deleteIdea(formData: FormData) {
+  const ideaId = formData.get("ideaId");
+
+  if (typeof ideaId !== "string" || !ideaId) {
+    return;
+  }
+
+  const { supabase, userId } = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("ideas")
+    .delete()
+    .eq("id", ideaId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`No se pudo eliminar la idea: ${error.message}`);
+  }
 
   revalidatePath("/ideas");
 }
