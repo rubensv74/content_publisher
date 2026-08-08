@@ -30,6 +30,7 @@ export type RenderablePublication = {
   storyType: StoryTypeKey;
   format: PublicationFormat;
   structuredContent: StructuredContent;
+  contentSchemaVersion: number;
   archetypeKey: string;
   archetypeVersion: number;
   variantKey: string;
