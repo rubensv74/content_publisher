@@ -56,9 +56,9 @@ Decisión: Tailwind CSS + shadcn/ui para la interfaz de la aplicación y rendere
 
 ### AG-002 — Autenticación personal de V1
 
-**Estado: Abierto.**
+**Estado: Aprobado.**
 
-Debe decidirse el mecanismo de acceso privado antes de implementar autenticación o persistencia protegida.
+Decisión: Supabase Auth con email + contraseña, un único usuario autorizado, registro público desactivado y protección real de datos y Storage mediante políticas. Registrado en `ADR-005_PERSONAL_AUTHENTICATION.md`.
 
 ### AG-003 — Renderizado de imágenes y PDF
 
