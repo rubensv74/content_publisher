@@ -8,7 +8,10 @@ import {
   updatePublicationStory,
 } from "@/features/publications/actions";
 import { getPublication } from "@/features/publications/data";
+import { getPublishableRenders } from "@/features/publishing/data";
+import { PublishingPanel } from "@/features/publishing/publishing-panel";
 import { PersistedPublicationPreview } from "@/features/renders/persisted-publication-preview";
+import { getBufferConnectionStatus } from "@/lib/publishing/buffer/account";
 import type { RenderablePublication } from "@/publication-renderer/contracts";
 
 const workflow = ["Idea", "Story", "Format", "Design", "Preview", "Publish"];
@@ -19,10 +22,13 @@ export default async function PublicationStudioPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [publication, identity] = await Promise.all([
-    getPublication(id),
-    getIdentitySnapshot(),
-  ]);
+  const [publication, identity, publishableRenders, bufferStatus] =
+    await Promise.all([
+      getPublication(id),
+      getIdentitySnapshot(),
+      getPublishableRenders(id),
+      getBufferConnectionStatus(),
+    ]);
 
   if (!publication) {
     notFound();
@@ -71,6 +77,8 @@ export default async function PublicationStudioPage({
     assets: [],
   };
 
+  const workflowActiveIndex = publishableRenders.length > 0 ? 5 : 4;
+
   return (
     <div className="mx-auto max-w-7xl">
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -94,19 +102,18 @@ export default async function PublicationStudioPage({
 
       <div className="mb-7 overflow-x-auto rounded-2xl border border-[var(--border)] bg-white p-3">
         <ol className="flex min-w-max items-center gap-2">
-          {workflow.map((step, index) => {
-            const active = index <= 4;
-            return (
-              <li
-                key={step}
-                className={`rounded-xl px-3 py-2 text-xs font-semibold ${
-                  active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
-                }`}
-              >
-                {index + 1}. {step}
-              </li>
-            );
-          })}
+          {workflow.map((step, index) => (
+            <li
+              key={step}
+              className={`rounded-xl px-3 py-2 text-xs font-semibold ${
+                index <= workflowActiveIndex
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-400"
+              }`}
+            >
+              {index + 1}. {step}
+            </li>
+          ))}
         </ol>
       </div>
 
@@ -299,13 +306,25 @@ export default async function PublicationStudioPage({
             </Link>
           </section>
 
+          <PublishingPanel
+            publicationId={publication.id}
+            renders={publishableRenders}
+            bufferStatus={bufferStatus}
+          />
+
           <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
               Estado del flujo
             </p>
-            <h2 className="mt-3 font-semibold">Preview → Render Ready operativo</h2>
+            <h2 className="mt-3 font-semibold">
+              {publishableRenders.length > 0
+                ? "Render Ready → Publish preparado"
+                : "Preview → Render Ready operativo"}
+            </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Una vez seleccionado el diseño, el PNG/PDF final puede guardarse en Storage público con una ruta inmutable y una fila trazable en renders.
+              {publishableRenders.length > 0
+                ? "Existe al menos un archivo final con URL pública estable. Cuando Buffer esté conectado puede enviarse, programarse o guardarse como draft."
+                : "Una vez seleccionado el diseño, el PNG/PDF final puede guardarse en Storage público con una ruta inmutable y una fila trazable en renders."}
             </p>
           </section>
         </aside>
