@@ -79,11 +79,23 @@ Núcleo relacional PostgreSQL + JSONB para estructuras variables, con UUID, `tim
 
 App Router + `src/` + separación por responsabilidades entre rutas, features, UI compartida y renderer. `ADR-008_NEXTJS_APP_ROUTER_AND_SOURCE_ORGANIZATION.md`.
 
+### AG-006 — Almacenamiento de renders publicables y URL estable
+
+**Estado: Abierto.**
+
+Ha aparecido al llegar al tramo `PREVIEW → PUBLISH`. Buffer necesita una URL pública, directa y estable para recuperar PNG/PDF, mientras los assets fuente de Content Publisher deben permanecer privados.
+
+La propuesta está documentada en `docs/architecture/proposals/AG-006_PUBLISHABLE_ASSET_STORAGE.md`.
+
+Recomendación actual: **Opción A — mantener los recursos fuente en el bucket privado existente y crear un segundo bucket público de Supabase dedicado exclusivamente a renders finales aprobados**.
+
+No se implementará esta frontera hasta aprobar el gate.
+
 ## Estado global
 
-**No existen gates previos a la inicialización del código pendientes.**
+**La arquitectura base de la aplicación está cerrada, pero AG-006 está abierto antes de implementar la publicación real.**
 
-El proyecto puede avanzar de forma autónoma aplicando las decisiones ya registradas. Un nuevo gate solo se abrirá si aparece una elección posterior con impacto arquitectónico real.
+El trabajo que no dependa de esta decisión puede continuar. El tramo que convierta un render en un recurso público estable para Buffer queda bloqueado hasta resolver AG-006.
 
 ## Regla
 
