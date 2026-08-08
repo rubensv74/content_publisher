@@ -1,23 +1,21 @@
 # AG-004 — Modelo de datos inicial
 
-- Estado: Proposed
+- Estado: Aprobado
 - Fecha: 2026-08-08
-- Gate: requiere aprobación antes de crear migraciones de Supabase/PostgreSQL
+- Decisión: Opción A — núcleo relacional + JSONB donde la estructura sea genuinamente variable
 
 ## Por qué aparece esta decisión ahora
 
-Ya conocemos el flujo funcional de la V1 y las fronteras principales del sistema. El siguiente paso sería crear la aplicación y sus primeras migraciones.
+Ya conocemos el flujo funcional de la V1 y las fronteras principales del sistema. El siguiente paso será crear la aplicación y sus primeras migraciones.
 
-Antes debemos decidir cómo traducir el modelo conceptual a PostgreSQL, porque una mala elección aquí puede provocar dos problemas opuestos:
+Antes debíamos decidir cómo traducir el modelo conceptual a PostgreSQL, porque una mala elección aquí puede provocar dos problemas opuestos:
 
 - un esquema excesivamente rígido que obligue a migrar tablas cada vez que aparezca un nuevo tipo de historia;
 - un esquema excesivamente libre basado en JSON que pierda relaciones, integridad y capacidad de consulta.
 
 Content Publisher necesita ambas cosas: estructura estable para ideas, publicaciones, assets y trabajos de publicación, y flexibilidad para contenidos editoriales que cambian según el tipo de historia.
 
-## Opción A — Modelo híbrido: núcleo relacional + JSONB para contenido variable — recomendada
-
-### Idea principal
+## Decisión aprobada
 
 Usar tablas y relaciones normales para aquello que tiene una identidad y un ciclo de vida estable, y `jsonb` para estructuras que varían según el tipo de publicación o proveedor.
 
@@ -38,9 +36,9 @@ auth.users
     └── user-owned data protected by RLS
 ```
 
-### Tablas principales propuestas
+## Tablas principales aprobadas
 
-#### `identity_profiles`
+### `identity_profiles`
 
 Configuración de identidad del usuario.
 
@@ -56,7 +54,7 @@ Campos conceptuales:
 
 `identity_config` contendrá elementos que todavía pueden evolucionar, por ejemplo paletas, tipografías, series y pequeños tokens visuales.
 
-#### `ideas`
+### `ideas`
 
 Bandeja de oportunidades de contenido.
 
@@ -77,7 +75,7 @@ Campos conceptuales:
 
 Una idea no se transforma físicamente en una publicación. Cuando se acepta, se crea una publicación con referencia `source_idea_id`. De esta forma se conserva el origen y la trazabilidad.
 
-#### `publications`
+### `publications`
 
 Unidad principal de trabajo editorial.
 
@@ -106,35 +104,7 @@ Campos conceptuales:
 
 La parte variable del relato vive en `structured_content`.
 
-Ejemplo conceptual:
-
-```json
-{
-  "hook": "...",
-  "context": "...",
-  "problem": "...",
-  "decision": "...",
-  "result": "...",
-  "lesson": "..."
-}
-```
-
-Un tutorial podría usar otra forma:
-
-```json
-{
-  "hook": "...",
-  "intro": "...",
-  "steps": [
-    { "title": "...", "body": "..." }
-  ],
-  "closing": "..."
-}
-```
-
-Por eso se propone JSONB para esta parte, pero no para toda la publicación.
-
-#### `assets`
+### `assets`
 
 Metadatos de recursos almacenados en Supabase Storage.
 
@@ -154,11 +124,11 @@ Campos conceptuales:
 
 Los archivos físicos no se almacenarán dentro de PostgreSQL.
 
-#### `publication_assets`
+### `publication_assets`
 
 Relación entre publicación y asset.
 
-Permite indicar:
+Campos conceptuales:
 
 - `publication_id`
 - `asset_id`
@@ -166,9 +136,7 @@ Permite indicar:
 - `sort_order`
 - `usage_config jsonb` opcional
 
-Esto permite reutilizar un asset y saber si actúa como portada, screenshot, imagen de una slide, etc.
-
-#### `renders`
+### `renders`
 
 Registro de los archivos finales generados.
 
@@ -177,7 +145,7 @@ Campos conceptuales:
 - `id`
 - `user_id`
 - `publication_id`
-- `render_type` (`png`, `pdf`...)
+- `render_type`
 - `storage_path` opcional
 - `status`
 - `width` opcional
@@ -186,21 +154,9 @@ Campos conceptuales:
 - `render_context jsonb`
 - `created_at`
 
-### Por qué `render_context` es importante
+`render_context` conservará una instantánea suficiente de la versión del arquetipo, variante, identidad aplicada, dimensiones y configuración de exportación para mantener trazabilidad histórica.
 
-La identidad y los arquetipos evolucionarán. Si dentro de seis meses cambiamos una tipografía, una paleta o el arquetipo `technical-03`, no queremos perder la capacidad de saber con qué configuración se creó una publicación antigua.
-
-Por eso cada render final debe guardar una instantánea suficiente de:
-
-- versión del arquetipo;
-- variante;
-- identidad aplicada;
-- dimensiones;
-- configuración relevante de exportación.
-
-No necesitamos duplicar todo el HTML ni el PNG dentro de la base de datos: guardamos el archivo en Storage y su contexto reproducible en PostgreSQL.
-
-#### `publishing_jobs`
+### `publishing_jobs`
 
 Cada intento de publicar o programar.
 
@@ -212,7 +168,7 @@ Campos conceptuales:
 - `render_id` opcional
 - `destination`
 - `provider`
-- `action` (`publish_now`, `schedule`, `draft`...)
+- `action`
 - `status`
 - `scheduled_for` opcional
 - `external_id` opcional
@@ -223,43 +179,39 @@ Campos conceptuales:
 - `updated_at`
 - `completed_at` opcional
 
-Buffer queda registrado como proveedor técnico, mientras `destination` seguirá siendo LinkedIn. Esto mantiene la separación acordada entre destino y proveedor.
+Buffer queda registrado como proveedor técnico, mientras `destination` seguirá siendo LinkedIn.
 
-## Qué no sería tabla en la V1
+## Qué no será tabla en la V1
 
 ### Story Types
 
-Los tipos de historia serán catálogo de aplicación, versionado en código.
+Catálogo de aplicación versionado en código.
 
 ### Design Families
 
-Serán catálogo de diseño en código/documentación.
+Catálogo de diseño versionado en código y documentación.
 
 ### Archetypes y Variants
 
-Serán componentes y definiciones versionadas en el repositorio, no registros editables de base de datos.
-
-Una publicación guardará sus claves y versiones para saber qué renderer utilizar.
+Componentes y definiciones versionadas en el repositorio. Una publicación guardará sus claves y versiones para saber qué renderer utilizar.
 
 ### Editorial History
 
-No necesita inicialmente una tabla independiente. Se obtiene a partir de publicaciones, renders y publishing jobs. Si más adelante necesitamos un log completo de eventos, se añadirá deliberadamente.
+Se obtendrá inicialmente a partir de publicaciones, renders y publishing jobs.
 
 ### Suggestions
 
-El Suggestion Engine está fuera de V1. Su tabla se diseñará cuando ese módulo se implemente, pero las ideas ya incorporarán `source_type` y `source_ref` para recibir futuras sugerencias sin rehacer el núcleo.
+El Suggestion Engine está fuera de V1. Su tabla se diseñará cuando ese módulo se implemente, pero las ideas ya incorporarán `source_type` y `source_ref`.
 
-## Reglas transversales propuestas
+## Reglas transversales aprobadas
 
 ### Propiedad y RLS
 
-Todas las entidades de usuario tendrán `user_id` y políticas RLS basadas en `auth.uid()`, aunque la V1 tenga un único usuario.
-
-Esto evita construir un esquema inseguro que solo funcione porque hoy hay una sola cuenta.
+Todas las entidades de usuario tendrán `user_id` y políticas RLS basadas en `auth.uid()`.
 
 ### IDs
 
-Se usarán identificadores UUID para las entidades principales.
+Se usarán UUID para las entidades principales.
 
 ### Fechas
 
@@ -267,7 +219,7 @@ Las fechas persistidas se almacenarán con zona horaria (`timestamptz`) y la int
 
 ### JSONB con límites
 
-JSONB se usará cuando la estructura sea genuinamente variable:
+JSONB se usará para:
 
 - contenido estructurado;
 - configuración visual flexible;
@@ -275,73 +227,27 @@ JSONB se usará cuando la estructura sea genuinamente variable:
 - snapshots de render;
 - payloads de proveedores externos.
 
-No se utilizará como sustituto general de tablas, claves foráneas o columnas que necesitamos consultar frecuentemente.
+No sustituirá tablas, claves foráneas o columnas que necesitemos consultar frecuentemente.
 
 ### Versionado de contenido
 
 `structured_content` tendrá un `content_schema_version` explícito.
 
-De ese modo un cambio futuro en la forma de representar un tutorial o una arquitectura podrá migrarse de manera controlada.
-
 ### Integridad
 
 Las relaciones importantes se implementarán mediante claves foráneas. No se guardarán IDs importantes dentro de JSON cuando exista una relación real entre entidades.
 
-## Opción B — Modelo completamente normalizado
+## Alternativas descartadas
 
-Cada parte del contenido tendría tablas específicas, por ejemplo:
+### Opción B — Modelo completamente normalizado
 
-```text
-publication_hooks
-publication_steps
-publication_metrics
-publication_lessons
-publication_code_blocks
-...
-```
+Se descarta porque cada nuevo Story Type podría necesitar nuevas tablas y migraciones, ralentizando la evolución editorial sin una ventaja proporcional para la V1.
 
-### Ventajas
+### Opción C — Modelo predominantemente documental / JSONB
 
-- máxima estructura relacional;
-- restricciones fuertes en base de datos;
-- consultas SQL muy explícitas.
+Se descarta porque debilita integridad referencial, dificulta historial y filtros y mezcla conceptos con ciclos de vida diferentes.
 
-### Problemas
-
-- cada nuevo Story Type puede necesitar nuevas tablas y migraciones;
-- un mismo concepto editorial puede adoptar estructuras distintas;
-- añade muchas relaciones para datos que normalmente se cargan y guardan como una unidad;
-- ralentiza la evolución de la biblioteca editorial sin una ventaja proporcional para la V1.
-
-## Opción C — Modelo predominantemente documental / JSONB
-
-Una tabla principal guardaría casi todo el estado de la publicación como un documento JSON grande.
-
-### Ventajas
-
-- enorme flexibilidad inicial;
-- pocas migraciones;
-- rápido para prototipar.
-
-### Problemas
-
-- debilita integridad referencial;
-- dificulta consultas de historial, filtros y analítica;
-- mezcla conceptos con ciclos de vida diferentes;
-- hace más difícil aplicar relaciones claras entre publicación, assets, renders y publishing jobs;
-- desperdicia parte del valor de PostgreSQL.
-
-## Recomendación
-
-**Opción A — núcleo relacional + JSONB solo donde la estructura realmente cambia.**
-
-Es el punto de equilibrio adecuado para Content Publisher.
-
-El producto tiene entidades muy claras —idea, publicación, asset, render, trabajo de publicación— que merecen relaciones reales. Pero el contenido editorial y ciertas configuraciones visuales van a evolucionar y no deberían obligarnos a rediseñar tablas cada vez que añadamos un arquetipo o Story Type.
-
-Supabase recomienda JSONB para datos con esquema variable, pero también advierte que no debe sustituir indiscriminadamente las ventajas relacionales de PostgreSQL. Esta propuesta sigue exactamente esa separación.
-
-## Modelo resumido propuesto
+## Modelo resumido aprobado
 
 ```text
 auth.users
@@ -368,6 +274,6 @@ Aunque funcionalmente V1 use un solo perfil de identidad, no se codificará como
 - PostgreSQL — JSON Types: https://www.postgresql.org/docs/current/datatype-json.html
 - PostgreSQL — JSON Functions and Operators: https://www.postgresql.org/docs/current/functions-json.html
 
-## Decisión pendiente
+## Resultado
 
-Aprobar una de las tres estrategias antes de crear tablas, políticas RLS o migraciones en `supabase/`.
+Gate cerrado. Esta decisión se registra de forma estable en `ADR-007_HYBRID_RELATIONAL_JSONB_DATA_MODEL.md`.
