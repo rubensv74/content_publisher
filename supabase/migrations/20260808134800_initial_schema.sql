@@ -87,7 +87,7 @@ create table public.publications (
   constraint publications_source_idea_same_user
     foreign key (source_idea_id, user_id)
     references public.ideas(id, user_id)
-    on delete set null
+    on delete set null (source_idea_id)
 );
 
 create table public.assets (
@@ -188,7 +188,7 @@ create table public.publishing_jobs (
   constraint publishing_jobs_render_same_user
     foreign key (render_id, user_id)
     references public.renders(id, user_id)
-    on delete set null
+    on delete set null (render_id)
 );
 
 create unique index publications_series_number_unique
