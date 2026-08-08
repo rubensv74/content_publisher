@@ -2,7 +2,7 @@
 
 ## Estado
 
-Arquitectura base acordada. La estrategia de interfaz, la separación respecto al renderer visual, la autenticación personal y el mecanismo de renderizado de la V1 ya están aprobados. Queda abierto el modelo de datos inicial antes de comenzar las migraciones.
+La arquitectura base de la V1 ya tiene cerradas las decisiones sobre plataforma, interfaz, autenticación, renderizado y modelo de datos. Antes de generar el esqueleto Next.js queda por decidir explícitamente cómo organizaremos el routing y el código fuente para no introducir esa estructura de forma accidental.
 
 ## Objetivo arquitectónico
 
@@ -40,6 +40,26 @@ Construir una aplicación web personal, modular y extensible, capaz de gestionar
 - Supabase
 - PostgreSQL
 - Supabase Storage
+- núcleo relacional para entidades estables
+- JSONB únicamente para contenido y configuraciones genuinamente variables
+
+Entidades principales de la V1:
+
+- `identity_profiles`
+- `ideas`
+- `publications`
+- `assets`
+- `publication_assets`
+- `renders`
+- `publishing_jobs`
+
+Reglas de persistencia:
+
+- UUID para entidades principales
+- `timestamptz` para fechas persistidas
+- claves foráneas para relaciones reales
+- versionado explícito de `structured_content`
+- contexto de render suficiente para trazabilidad histórica
 
 ### Autenticación
 
@@ -87,19 +107,27 @@ La interfaz puede apoyarse en shadcn/ui, pero el renderer final no. Esta fronter
 
 El arquetipo define qué se ve. El adaptador de exportación define cómo se convierte esa vista en PNG o PDF. Los arquetipos no conocerán `html-to-image` ni `pdf-lib`.
 
-### 6. Seguridad en profundidad
+### 6. Modelo relacional con flexibilidad controlada
+
+Las entidades con identidad y ciclo de vida propio se almacenan como tablas y relaciones normales. JSONB se reserva para estructuras genuinamente variables y versionadas.
+
+### 7. Seguridad en profundidad
 
 El acceso privado no dependerá solo de rutas protegidas. Datos y recursos deberán estar protegidos también en Supabase mediante RLS y políticas de Storage.
 
-### 7. Identidad centralizada
+### 8. Identidad centralizada
 
 Firma, tipografías, paletas, series y reglas visuales deben vivir en una configuración central y no duplicarse dentro de cada plantilla.
 
-### 8. Historial desde el principio
+### 9. Historial desde el principio
 
 Ideas, borradores y publicaciones deben conservar suficiente información para que, más adelante, el motor de sugerencias pueda evitar repetición y razonar sobre el historial editorial.
 
-### 9. IA como capa sustituible
+### 10. Trazabilidad de renders
+
+Un cambio futuro de tipografía, paleta o arquetipo no debe borrar el contexto de una publicación anterior. Los renders conservarán la configuración relevante con la que fueron generados.
+
+### 11. IA como capa sustituible
 
 La IA no debe estar mezclada con las reglas básicas del producto. Las funciones de asistencia editorial se encapsularán para que el proveedor o modelo pueda cambiar sin rehacer el flujo principal.
 
@@ -159,6 +187,10 @@ Convierte contenido + diseño + identidad + assets en una representación visual
 
 Convierte el resultado visual a PNG o PDF. En V1 usa `html-to-image` y `pdf-lib`, pero esas dependencias quedan aisladas detrás de una interfaz propia.
 
+### Persistencia
+
+Conserva entidades, relaciones, contenido versionado y trazabilidad. No debe decidir cómo se representa visualmente una publicación.
+
 ### Publicación
 
 Recibe texto y recursos ya terminados. No debe decidir cómo se diseñan.
@@ -167,11 +199,9 @@ Recibe texto y recursos ya terminados. No debe decidir cómo se diseñan.
 
 Será un productor de ideas y recomendaciones, no un publicador autónomo.
 
-## Decisiones todavía abiertas
+## Decisiones abiertas antes de generar el esqueleto de aplicación
 
-Antes de crear las primeras migraciones debe resolverse explícitamente:
-
-1. **AG-004:** estructura inicial del modelo de datos.
+1. **AG-005:** estrategia de routing y organización inicial del código Next.js.
 
 La gestión de estado y las librerías de formularios se decidirán solo si el desarrollo demuestra que hacen falta; no se introducirán por defecto.
 
