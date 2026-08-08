@@ -2,13 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { storyTypes } from "@/config/story-types";
+import { getIdentitySnapshot } from "@/features/identity/data";
 import {
   selectPublicationDesign,
   updatePublicationStory,
 } from "@/features/publications/actions";
 import { getPublication } from "@/features/publications/data";
 import type { RenderablePublication } from "@/publication-renderer/contracts";
-import { defaultIdentity } from "@/publication-renderer/identity/default-identity";
 import { BuildNotePreview } from "@/publication-renderer/preview/build-note-preview";
 import { StepByStepPreview } from "@/publication-renderer/preview/step-by-step-preview";
 
@@ -20,7 +20,10 @@ export default async function PublicationStudioPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const publication = await getPublication(id);
+  const [publication, identity] = await Promise.all([
+    getPublication(id),
+    getIdentitySnapshot(),
+  ]);
 
   if (!publication) {
     notFound();
@@ -64,7 +67,7 @@ export default async function PublicationStudioPage({
     archetypeKey: candidateDesign.key,
     archetypeVersion: candidateDesign.version,
     variantKey: candidateDesign.variant,
-    identity: defaultIdentity,
+    identity,
     assets: [],
   };
 
@@ -201,7 +204,7 @@ export default async function PublicationStudioPage({
               </p>
               <h2 className="mt-2 text-xl font-semibold">{candidateDesign.name}</h2>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                {candidateDesign.description} La identidad visual sigue siendo provisional mientras validamos el motor.
+                {candidateDesign.description} Los tokens de identidad proceden de la configuración central de Identity.
               </p>
             </div>
 
@@ -273,13 +276,31 @@ export default async function PublicationStudioPage({
             ) : null}
           </section>
 
+          <section className="rounded-2xl border border-[var(--border)] bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Identidad aplicada
+            </p>
+            <h2 className="mt-3 font-semibold">
+              {identity.signatureLabel ?? identity.displayName}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+              La firma, paleta y tipografía se cargan desde Identity y se comparten entre arquetipos.
+            </p>
+            <Link
+              href="/settings"
+              className="mt-4 inline-flex text-sm font-medium text-slate-700 hover:text-slate-950"
+            >
+              Ajustar identidad →
+            </Link>
+          </section>
+
           <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
               Estado del flujo
             </p>
             <h2 className="mt-3 font-semibold">Design + Preview operativos</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Imagen única exporta PNG y carrusel exporta PDF. El siguiente bloque será cerrar la identidad y preparar el render final persistente antes de publicar.
+              Imagen única exporta PNG y carrusel exporta PDF. El siguiente bloque será preparar el render final persistente antes de publicar.
             </p>
           </section>
         </aside>
