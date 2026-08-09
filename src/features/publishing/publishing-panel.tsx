@@ -50,6 +50,9 @@ export function PublishingPanel({
   const [activeAction, setActiveAction] = useState<
     "publish-now" | "schedule" | "draft" | null
   >(null);
+  const [lastSuccessfulAction, setLastSuccessfulAction] = useState<
+    "publish-now" | "schedule" | "draft" | null
+  >(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -118,6 +121,13 @@ export function PublishingPanel({
       return;
     }
 
+    if (action === "draft" && lastSuccessfulAction === "draft") {
+      setErrorMessage(
+        "Ya has creado un draft en esta sesión. Revísalo en Historial antes de generar otro.",
+      );
+      return;
+    }
+
     if (action === "schedule" && !scheduledFor) {
       setResultMessage(null);
       setErrorMessage("Selecciona una fecha y hora válida antes de programar.");
@@ -135,6 +145,7 @@ export function PublishingPanel({
     startTransition(async () => {
       try {
         await publishPublication(formData);
+        setLastSuccessfulAction(action);
         setResultMessage(successMessage(action));
         router.refresh();
       } catch (error) {
@@ -266,11 +277,15 @@ export function PublishingPanel({
           <button
             type="button"
             onClick={() => submit("draft")}
-            disabled={isPending}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
+            disabled={isPending || lastSuccessfulAction === "draft"}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-55"
           >
             <SquarePen size={16} />
-            {isPending && activeAction === "draft" ? "Guardando draft…" : "Guardar draft en Buffer"}
+            {isPending && activeAction === "draft"
+              ? "Guardando draft…"
+              : lastSuccessfulAction === "draft"
+                ? "Draft guardado ✓"
+                : "Guardar draft en Buffer"}
           </button>
         </div>
       </form>
