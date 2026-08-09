@@ -304,9 +304,11 @@ export function VisualConfigEditor({
 
         <div className="flex justify-end pt-2">
           <SubmitButton
-            idleLabel="Guardar configuración visual"
             pendingLabel="Guardando configuración…"
-          />
+            className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
+          >
+            Guardar configuración visual
+          </SubmitButton>
         </div>
       </form>
     </section>
