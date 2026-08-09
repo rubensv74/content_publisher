@@ -1,173 +1,85 @@
 # AG-013 — Persistencia y ciclo de vida de Suggestions
 
-**Estado:** Propuesto — pendiente de decisión  
-**Fecha:** 2026-08-09
+**Estado:** Aprobado — Opción B  
+**Fecha:** 2026-08-09  
+**ADR:** `ADR-016_SUGGESTION_PERSISTENCE_AND_LIFECYCLE.md`
 
-## Contexto
+## Decisión
 
-AG-012 aprobó OpenAI detrás de `SuggestionModel` para transformar `source_signals` en candidatos editoriales estructurados. Antes de exponer generación real en la interfaz debemos decidir qué ocurre con esas propuestas después de recibirlas.
-
-La decisión afecta al modelo de datos, deduplicación, trazabilidad y relación entre una señal observada, una Suggestion y una Idea aceptada.
-
-El flujo conceptual ya aprobado es:
+Las propuestas de Suggestion Engine se persisten como entidad propia `suggestions` y mantienen una relación many-to-many con las `source_signals` que las justifican mediante `suggestion_source_signals`.
 
 ```text
-Source Signal
+source_signal
       ↓
-Suggestion Engine
-      ↓
-Suggestion
+suggestion
       ↓
 revisión humana
       ↓
-Idea
+idea
+      ↓
+publication
 ```
 
-La pregunta de AG-013 es si `Suggestion` debe ser una entidad persistente propia o solo un resultado temporal.
+La separación semántica es obligatoria:
 
-## Opción A — Suggestions efímeras
+- una señal representa un hecho observado;
+- una sugerencia representa una propuesta del motor;
+- una Idea representa una decisión humana;
+- una Publication representa contenido ya trabajado.
 
-El modelo genera candidatos y se muestran en memoria. Al recargar la página desaparecen. Solo se persiste aquello que el usuario convierte inmediatamente en Idea.
-
-### Ventajas
-
-- ningún cambio adicional de base de datos;
-- implementación mínima;
-- poco almacenamiento.
-
-### Inconvenientes
-
-- se pierde una propuesta al cerrar o refrescar;
-- no existe historial de sugerencias aceptadas/descartadas;
-- difícil evitar que el motor proponga repetidamente lo mismo;
-- no puede medirse qué señales generan oportunidades útiles;
-- una ejecución fallida a mitad de revisión puede hacer perder resultados válidos.
-
-**Valoración:** demasiado frágil para uso recurrente.
-
-## Opción B — Entidad `suggestions` + relación explícita con señales — RECOMENDADA
-
-Crear una entidad propia para las propuestas y una relación many-to-many con las señales que las justifican.
-
-Modelo conceptual:
+## Ciclo de vida aprobado
 
 ```text
-source_signals
-      ↑
-      │ suggestion_source_signals
-      │
-suggestions
-      │
-      ├── new
-      ├── accepted
-      ├── dismissed
-      └── converted
-              ↓
-             idea
+new
+ ├── accepted ──→ converted ──→ idea
+ └── dismissed
 ```
 
-Campos orientativos de `suggestions`:
+- `new`: pendiente de revisión;
+- `accepted`: aprobada por el usuario;
+- `dismissed`: descartada sin borrarla;
+- `converted`: convertida explícitamente en Idea.
 
-- `id`;
-- `user_id`;
-- `title`;
-- `opportunity`;
-- `rationale`;
-- `story_type`;
-- `format`;
-- `design_family`;
-- `archetype_key`;
-- `priority`;
-- `confidence`;
-- `status`;
-- `provider`;
-- `model`;
-- `generation_fingerprint`;
-- `created_at`;
-- `updated_at`;
-- `accepted_at` / `dismissed_at` cuando corresponda;
-- `converted_idea_id` cuando termine convertida.
+## Persistencia
 
-`suggestion_source_signals` conservaría las relaciones con las señales reales que sustentan cada propuesta.
+`suggestions` conserva el contenido estructurado de la propuesta, recomendación editorial, prioridad, confianza, proveedor, modelo, fingerprint de generación, estado y marcas temporales.
 
-### Ventajas
+`suggestion_source_signals` conserva las relaciones con las señales fuente sin duplicar el contenido documental original.
 
-- bandeja revisable y estable;
-- aceptar/descartar sin perder trazabilidad;
-- deduplicación entre ejecuciones;
-- permite aprender qué propuestas resultan útiles sin confundirlas con Ideas;
-- mantiene clara la frontera `Suggestion = propuesta`, `Idea = decisión humana`;
-- relación relacional precisa con una o varias señales fuente;
-- facilita auditoría y futura evaluación del motor.
+## Reglas de seguridad
 
-### Inconvenientes
+- RLS por `user_id`;
+- relaciones protegidas también por `user_id` para impedir cruces entre propietarios;
+- no se guarda el prompt completo ni la respuesta cruda del proveedor;
+- no se guarda ningún secreto de OpenAI;
+- la conversión a Idea exige una acción humana explícita.
 
-- añade dos tablas y RLS;
-- requiere lifecycle explícito;
-- algo más de código de persistencia.
+## Deduplicación V1
 
-**Valoración:** coherente con el núcleo relacional existente y con AG-010.
+`generation_fingerprint` evita duplicados exactos o casi idénticos de una misma oportunidad utilizando señales fuente y atributos editoriales normalizados.
 
-## Opción C — Guardar directamente cada propuesta como Idea
+La deduplicación semántica avanzada no forma parte de esta decisión.
 
-Cada candidato generado por IA entra directamente en `ideas`, marcado con `source_type = suggestion-engine` y algún estado diferenciado.
+## Implementación derivada
 
-### Ventajas
+- migración `add_suggestions`;
+- tabla `suggestions`;
+- tabla `suggestion_source_signals`;
+- bandeja `/suggestions`;
+- acciones `Aceptar`, `Descartar` y `Convertir en Idea`;
+- generación bajo demanda mediante el `SuggestionModel` aprobado en AG-012;
+- las señales utilizadas pasan a `analysis_status = suggested`.
 
-- reutiliza una entidad existente;
-- UI y conversión a Publication ya disponibles;
-- menos tablas.
+## Alternativas descartadas
 
-### Inconvenientes
+### A — Suggestions efímeras
 
-- mezcla propuestas no aceptadas con ideas decididas por el usuario;
-- la bandeja de Ideas puede llenarse de ruido;
-- descartar una sugerencia pasa a ser una operación sobre Ideas;
-- dificulta medir aceptación real;
-- debilita la revisión humana como frontera de producto.
+Descartada porque se perderían al recargar, impedirían una revisión estable y dificultarían deduplicación y trazabilidad.
 
-**Valoración:** sencilla técnicamente pero incorrecta semánticamente.
+### C — Crear directamente Ideas
 
-## Recomendación
+Descartada porque mezclaría propuestas automáticas con decisiones humanas y llenaría la bandeja de Ideas de ruido no aceptado.
 
-**Opción B — `suggestions` como entidad propia + `suggestion_source_signals`.**
+## Fuera de alcance
 
-La separación quedaría:
-
-```text
-Hecho observado   → source_signal
-Propuesta del motor → suggestion
-Decisión humana   → idea
-Contenido trabajado → publication
-```
-
-Esto mantiene la semántica del producto y evita que la IA ensucie directamente la bandeja de Ideas.
-
-## Reglas propuestas si se aprueba B
-
-1. RLS por `user_id`.
-2. Una Suggestion nunca crea una Publication directamente.
-3. Solo una acción explícita de aceptación puede convertirla en Idea.
-4. Descartar no borra necesariamente la fila; cambia su estado para evitar repetición.
-5. Las señales fuente se relacionan mediante FK, no copiando su contenido.
-6. `generation_fingerprint` ayuda a evitar candidatos duplicados equivalentes.
-7. No se guarda el prompt completo ni respuestas crudas del proveedor por defecto.
-8. Sí pueden conservarse `provider`, `model`, confianza y uso técnico mínimo para evaluación/coste.
-9. La aceptación puede marcar las señales relacionadas como `suggested`, sin impedir que una misma señal participe en otra propuesta claramente distinta.
-10. La política de retención de Suggestions será ligera; son datos pequeños, no binarios.
-
-## Lo que AG-013 no decide
-
-- algoritmo exacto de deduplicación semántica;
-- embeddings;
-- scheduler;
-- frecuencia automática de generación;
-- tendencias externas;
-- aprendizaje automático a partir de aceptaciones;
-- publicación automática.
-
-## Decisión solicitada
-
-- **A** — Suggestions efímeras;
-- **B** — entidad `suggestions` + relación con `source_signals` **(recomendada)**;
-- **C** — convertir todo directamente en Ideas.
+AG-013 no decide embeddings, base vectorial, scheduler, enriquecimiento profundo de contexto, tendencias externas, aprendizaje automático a partir de aceptaciones ni publicación automática.
