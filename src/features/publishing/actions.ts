@@ -3,8 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { createBufferPost, type BufferPublishAction } from "@/lib/publishing/buffer/post";
 import { getBufferConnectionStatus } from "@/lib/publishing/buffer/account";
+import {
+  createBufferPost,
+  deleteBufferPost,
+  type BufferPublishAction,
+} from "@/lib/publishing/buffer/post";
 import { createClient } from "@/lib/supabase/server";
 
 import { getPublishableRenders } from "./data";
@@ -220,6 +224,7 @@ export async function publishPublication(formData: FormData) {
 
     revalidatePath("/publications");
     revalidatePath(`/publications/${publicationId}/studio`);
+    revalidatePath("/history");
 
     return {
       ok: true as const,
@@ -241,6 +246,78 @@ export async function publishPublication(formData: FormData) {
       .eq("id", job.id)
       .eq("user_id", userId);
 
+    revalidatePath("/history");
     throw error;
   }
+}
+
+export async function deleteBufferDraft(jobId: string) {
+  if (!jobId) {
+    throw new Error("No se ha indicado el draft que debe eliminarse.");
+  }
+
+  const supabase = await createClient();
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
+
+  if (claimsError || typeof userId !== "string" || !userId) {
+    redirect("/login");
+  }
+
+  const { data: job, error: jobError } = await supabase
+    .from("publishing_jobs")
+    .select("id,publication_id,action,status,external_id,provider_payload")
+    .eq("id", jobId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (jobError || !job) {
+    throw new Error(
+      `No se pudo localizar el draft: ${jobError?.message ?? "no encontrado"}`,
+    );
+  }
+
+  if (job.action !== "draft") {
+    throw new Error("Solo se pueden eliminar desde aquí los drafts creados en Buffer.");
+  }
+
+  if (job.status === "cancelled") {
+    return { ok: true as const, alreadyDeleted: true as const };
+  }
+
+  if (!job.external_id) {
+    throw new Error("Este registro no contiene el identificador del draft en Buffer.");
+  }
+
+  await deleteBufferPost(job.external_id);
+
+  const currentPayload =
+    job.provider_payload && typeof job.provider_payload === "object"
+      ? job.provider_payload
+      : {};
+
+  const { error: updateError } = await supabase
+    .from("publishing_jobs")
+    .update({
+      status: "cancelled",
+      completed_at: new Date().toISOString(),
+      error_message: null,
+      provider_payload: {
+        ...currentPayload,
+        deletedFromBufferAt: new Date().toISOString(),
+      },
+    })
+    .eq("id", job.id)
+    .eq("user_id", userId);
+
+  if (updateError) {
+    throw new Error(
+      `Buffer eliminó el draft, pero no se pudo actualizar el historial local: ${updateError.message}`,
+    );
+  }
+
+  revalidatePath("/history");
+  revalidatePath(`/publications/${job.publication_id}/studio`);
+
+  return { ok: true as const, alreadyDeleted: false as const };
 }
