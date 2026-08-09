@@ -51,8 +51,10 @@ function storyContentFromForm(formData: FormData): PublicationStoryContent {
     problem: optionalText(formData.get("problem")),
     attempts: optionalText(formData.get("attempts")),
     solution: optionalText(formData.get("solution")),
+    result: optionalText(formData.get("result")),
     learning: optionalText(formData.get("learning")),
     insight: optionalText(formData.get("insight")),
+    cta: optionalText(formData.get("cta")),
   };
 }
 
