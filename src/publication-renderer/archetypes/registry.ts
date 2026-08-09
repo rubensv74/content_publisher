@@ -1,6 +1,7 @@
 import { architectureFlowDefinition } from "./architecture-flow/definition";
 import { boldStatementDefinition } from "./bold-statement/definition";
 import { buildNoteDefinition } from "./build-note/definition";
+import { caseStudyDefinition } from "./case-study/definition";
 import { heroScreenshotDefinition } from "./hero-screenshot/definition";
 import { processStepsDefinition } from "./process-steps/definition";
 import { splitScreenshotDefinition } from "./split-screenshot/definition";
@@ -14,6 +15,7 @@ export const publicationArchetypes = [
   architectureFlowDefinition,
   processStepsDefinition,
   stepByStepDefinition,
+  caseStudyDefinition,
 ] as const;
 
 export function getArchetypeDefinition(key: string) {
