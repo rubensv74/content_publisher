@@ -4,7 +4,8 @@ export type SourceSignalSourceType =
   | "github"
   | "knowledge-base"
   | "editorial-history"
-  | "manual-idea";
+  | "manual-idea"
+  | "technology";
 
 export type SourceSignalAnalysisStatus =
   | "new"
