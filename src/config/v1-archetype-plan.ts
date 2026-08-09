@@ -16,6 +16,7 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "editorial",
     use: "Idea fuerte, aprendizaje, reflexión u opinión técnica.",
     variants: ["light", "dark", "accent"],
+    implementationKey: "bold-statement",
   },
   {
     code: "ED-03",
