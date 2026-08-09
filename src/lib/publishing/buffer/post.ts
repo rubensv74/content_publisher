@@ -20,6 +20,20 @@ const CREATE_POST_MUTATION = `
   }
 `;
 
+const DELETE_POST_MUTATION = `
+  mutation DeletePost($input: DeletePostInput!) {
+    deletePost(input: $input) {
+      __typename
+      ... on DeletePostSuccess {
+        id
+      }
+      ... on VoidMutationError {
+        message
+      }
+    }
+  }
+`;
+
 export type BufferPublishAction = "publish-now" | "schedule" | "draft";
 
 export type BufferPublishMedia =
@@ -54,6 +68,14 @@ type CreatePostPayload = {
   createPost: {
     __typename: string;
     post?: BufferCreatedPost;
+    message?: string;
+  };
+};
+
+type DeletePostPayload = {
+  deletePost: {
+    __typename: string;
+    id?: string;
     message?: string;
   };
 };
@@ -132,4 +154,23 @@ export async function createBufferPost(
   }
 
   return data.createPost.post;
+}
+
+export async function deleteBufferPost(postId: string): Promise<string> {
+  const data = await bufferGraphQL<
+    DeletePostPayload,
+    { input: { id: string } }
+  >(DELETE_POST_MUTATION, {
+    input: { id: postId },
+  });
+
+  if (!data.deletePost.id) {
+    throw new BufferApiError(
+      data.deletePost.message ||
+        `Buffer no pudo eliminar el post (${data.deletePost.__typename}).`,
+      "graphql",
+    );
+  }
+
+  return data.deletePost.id;
 }
