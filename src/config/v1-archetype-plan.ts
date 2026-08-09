@@ -61,6 +61,7 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "technical",
     use: "Explicar cómo se conectan varias piezas de una solución.",
     variants: ["vertical flow", "layered", "hub-and-spoke"],
+    implementationKey: "architecture-flow",
   },
   {
     code: "TE-02",
