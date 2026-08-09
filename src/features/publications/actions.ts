@@ -144,6 +144,7 @@ export async function updatePublicationStory(formData: FormData) {
 
   revalidatePath("/publications");
   revalidatePath(`/publications/${publicationId}/studio`);
+  redirect(`/publications/${publicationId}/studio?saved=content`);
 }
 
 export async function selectPublicationDesign(formData: FormData) {
@@ -216,4 +217,5 @@ export async function selectPublicationDesign(formData: FormData) {
 
   revalidatePath("/publications");
   revalidatePath(`/publications/${publicationId}/studio`);
+  redirect(`/publications/${publicationId}/studio?saved=design`);
 }
