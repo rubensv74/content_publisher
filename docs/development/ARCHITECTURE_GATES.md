@@ -91,11 +91,29 @@ Los assets fuente permanecen en `content-publisher` privado y los renders finale
 
 La V1 utiliza una API key personal de Buffer en `BUFFER_API_KEY`, disponible exclusivamente en servidor. La credencial no se almacena en PostgreSQL, no llega al navegador y no se versiona. OAuth 2.0 + PKCE queda reservado para una futura evolución multiusuario. `ADR-010_BUFFER_PERSONAL_API_KEY_SERVER_SIDE.md`.
 
+### AG-008 — Datos especializados de arquetipos visuales
+
+**Estado: Abierto — pendiente de decisión.**
+
+Los arquetipos básicos ya pueden construirse a partir de historia editorial y assets, pero los cinco diseños V1 pendientes necesitan datos especializados como métricas, snippets de código, anotaciones, pares before/after o series de datos.
+
+La propuesta está documentada en:
+
+`docs/architecture/proposals/AG-008_SPECIALIZED_ARCHETYPE_INPUT_MODEL.md`
+
+Alternativas:
+
+- **A** — mezclar estos datos dentro de `structured_content`;
+- **B** — añadir `visual_config JSONB` namespaced por arquetipo en `publications` **(recomendada)**;
+- **C** — crear una tabla relacional `publication_visual_configs` independiente.
+
+La implementación de ED-03, PR-03, PR-04, TE-02 y DA-01 queda detenida hasta aprobar una opción.
+
 ## Estado global
 
-**No hay un gate de arquitectura abierto en este momento.**
+**Existe un gate de arquitectura abierto: AG-008.**
 
-El desarrollo puede continuar con la integración `RENDER READY → PUBLISH` aplicando las decisiones aprobadas. Un nuevo gate solo se abrirá si aparece una elección posterior con impacto arquitectónico real.
+El desarrollo autónomo ha avanzado hasta la frontera en la que los siguientes arquetipos requieren decidir cómo persistir sus inputs visuales especializados. No se modificará ese modelo ni se implementarán esos cinco arquetipos hasta que exista aprobación.
 
 ## Regla
 
