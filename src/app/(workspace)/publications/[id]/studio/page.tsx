@@ -106,6 +106,19 @@ export default async function PublicationStudioPage({
   const canPersistFinalRender = designSelected && (!designNeedsHeroAsset || Boolean(heroAsset));
   const designFamily = designFamilies.find((family) => family.key === previewDesign.family);
 
+  const currentPublishableRenders = publishableRenders.filter((render) => {
+    if (!publication.archetype_key || !publication.variant_key) return false;
+
+    const designMatches =
+      render.archetypeKey === publication.archetype_key &&
+      render.variantKey === publication.variant_key;
+    const renderedAfterLastEdit =
+      Date.parse(render.createdAt) >= Date.parse(publication.updated_at);
+
+    return designMatches && renderedAfterLastEdit;
+  });
+  const staleRenderCount = publishableRenders.length - currentPublishableRenders.length;
+
   const renderablePublication: RenderablePublication = {
     id: publication.id,
     title: publication.title,
@@ -120,7 +133,7 @@ export default async function PublicationStudioPage({
     assets: linkedAssets,
   };
 
-  const workflowActiveIndex = publishableRenders.length > 0 ? 5 : 4;
+  const workflowActiveIndex = currentPublishableRenders.length > 0 ? 5 : 4;
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -157,7 +170,7 @@ export default async function PublicationStudioPage({
           className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
           role="status"
         >
-          Diseño seleccionado correctamente. Ya puedes crear el render final.
+          Diseño seleccionado correctamente. Genera un render final nuevo antes de publicar.
         </div>
       ) : null}
 
@@ -227,8 +240,10 @@ export default async function PublicationStudioPage({
                 ["problem", "Problema o contexto", story.problem],
                 ["attempts", "Qué intentaste", story.attempts],
                 ["solution", "Decisión o solución", story.solution],
+                ["result", "Resultado", story.result],
                 ["learning", "Aprendizaje", story.learning],
                 ["insight", "Idea transferible", story.insight],
+                ["cta", "Cierre o llamada final", story.cta],
               ].map(([name, label, value]) => (
                 <div key={name as string}>
                   <label className="mb-2 block text-sm font-medium" htmlFor={name as string}>
@@ -473,9 +488,20 @@ export default async function PublicationStudioPage({
             </Link>
           </section>
 
+          {staleRenderCount > 0 ? (
+            <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
+                Render anterior
+              </p>
+              <p className="mt-2 text-sm leading-6 text-amber-900/80">
+                Hay {staleRenderCount} render{staleRenderCount === 1 ? "" : "s"} anterior{staleRenderCount === 1 ? "" : "es"}. No se ofrecen para publicar porque el contenido, diseño o recurso cambió después de generarlos.
+              </p>
+            </section>
+          ) : null}
+
           <PublishingPanel
             publicationId={publication.id}
-            renders={publishableRenders}
+            renders={currentPublishableRenders}
             bufferStatus={bufferStatus}
           />
 
@@ -484,14 +510,14 @@ export default async function PublicationStudioPage({
               Estado del flujo
             </p>
             <h2 className="mt-3 font-semibold">
-              {publishableRenders.length > 0
-                ? "Render Ready → Publish preparado"
-                : "Preview → Render Ready operativo"}
+              {currentPublishableRenders.length > 0
+                ? "Render actual → Publish preparado"
+                : "Preview → nuevo render necesario"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              {publishableRenders.length > 0
-                ? "Existe al menos un archivo final con URL pública estable. El panel de publicación permite enviarlo, programarlo o guardarlo como draft."
-                : "Una vez seleccionado el diseño y cumplidos sus requisitos, el PNG/PDF final puede guardarse con una ruta inmutable y una fila trazable en renders."}
+              {currentPublishableRenders.length > 0
+                ? "Existe un archivo final coherente con la última edición y el diseño guardado. Ya puede enviarse, programarse o guardarse como draft."
+                : "Solo los renders generados después de la última edición y con el diseño actualmente guardado se habilitan para publicar."}
             </p>
           </section>
         </aside>
