@@ -4,7 +4,7 @@ Fecha de actualización: 2026-08-09
 
 ## Resumen ejecutivo
 
-Content Publisher está en **Release Candidate de V1**.
+Content Publisher está en **Release Candidate de V1** y entra en fase de validación operativa.
 
 Flujo principal:
 
@@ -13,6 +13,12 @@ IDEA → STORY → FORMAT → DESIGN → PREVIEW → RENDER READY → BUFFER →
 ```
 
 La biblioteca visual V1 dispone de 12/12 arquetipos además de Build Note. Supabase, Buffer, Vercel y LinkedIn están integrados.
+
+El plan de aceptación V1 está documentado en:
+
+`docs/operations/V1_RELEASE_VALIDATION.md`
+
+La primera comprobación manual obligatoria es **RC-01 — Flujo ChatGPT Plus**.
 
 ## Suggestion Engine — arquitectura vigente
 
@@ -49,7 +55,10 @@ Idea
 - contexto adicional efímero y sanitizado;
 - descarga `/suggestions/chatgpt-packet` en TXT;
 - instrucciones y contrato JSON incluidos en el paquete;
-- importación manual de JSON desde ChatGPT;
+- importación manual de JSON desde ChatGPT mediante texto pegado;
+- importación alternativa mediante archivo `.json` o `.txt`;
+- límite de importación de 256 KB;
+- feedback visible cuando la importación falla;
 - validación de IDs, enums, confianza y arquetipo;
 - persistencia `suggestions` + `suggestion_source_signals`;
 - deduplicación por fingerprint;
@@ -111,7 +120,23 @@ El repositorio es público de forma intencionada para la estrategia de GitHub Ac
 
 ## Calidad
 
-GitHub Actions ejecuta instalación, ESLint, TypeScript y build. Cada cambio funcional debe superar ese workflow antes de considerarse cerrado.
+GitHub Actions ejecuta instalación, ESLint, TypeScript y build. La implementación actual del flujo ChatGPT Plus y las mejoras de importación superan el workflow `Quality`.
+
+Vercel está rechazando temporalmente los deployments más recientes por `build-rate-limit`. Se trata de un bloqueo operativo del proveedor, no de un fallo detectado por lint, TypeScript o build. La validación manual RC-01 debe hacerse sobre un deployment que incluya la versión actual del flujo.
+
+## Release Candidate
+
+Validaciones definidas:
+
+- RC-01 — ChatGPT Plus → Suggestion → Idea;
+- RC-02 — calidad de las fuentes;
+- RC-03 — ciclo editorial completo hasta Buffer Draft;
+- RC-04 — reconciliación Buffer;
+- RC-05 — QA visual de arquetipos;
+- RC-06 — seguridad y datos;
+- RC-07 — calidad técnica.
+
+No se añadirá alcance funcional nuevo durante esta fase salvo que una incidencia real lo justifique.
 
 ## Gates
 
