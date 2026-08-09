@@ -46,4 +46,5 @@ export type ArchetypeDefinition = {
   supportedFormats: PublicationFormat[];
   supportedStoryTypes?: StoryTypeKey[];
   variants: string[];
+  requiredAssetRoles?: string[];
 };
