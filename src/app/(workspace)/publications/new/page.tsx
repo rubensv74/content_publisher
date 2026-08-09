@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { SubmitButton } from "@/components/application/submit-button";
 import { storyTypes } from "@/config/story-types";
-import { createPublicationFromIdea } from "@/features/publications/actions";
 import { getIdea } from "@/features/ideas/data";
+import { createPublicationFromIdea } from "@/features/publications/actions";
+import { getSuggestionRecommendation } from "@/features/suggestions/data";
 
 const formats = [
   {
@@ -34,6 +36,20 @@ export default async function NewPublicationPage({
   if (!idea) {
     notFound();
   }
+
+  const sourceRecommendation =
+    idea.source_type === "suggestion-engine" && idea.source_ref
+      ? await getSuggestionRecommendation(idea.source_ref)
+      : null;
+
+  const recommendation =
+    sourceRecommendation?.status === "converted" &&
+    sourceRecommendation.convertedIdeaId === idea.id
+      ? sourceRecommendation
+      : null;
+
+  const defaultStoryType = recommendation?.storyType ?? "problem-solution";
+  const defaultFormat = recommendation?.format ?? "single-image";
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -106,7 +122,7 @@ export default async function NewPublicationPage({
                 <select
                   id="storyType"
                   name="storyType"
-                  defaultValue="problem-solution"
+                  defaultValue={defaultStoryType}
                   className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 outline-none transition focus:border-slate-500"
                 >
                   {storyTypes.map((story) => (
@@ -163,7 +179,7 @@ export default async function NewPublicationPage({
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {formats.map((format, index) => (
+              {formats.map((format) => (
                 <label
                   key={format.key}
                   className="cursor-pointer rounded-2xl border border-[var(--border)] p-4 transition hover:border-slate-400"
@@ -173,7 +189,7 @@ export default async function NewPublicationPage({
                       type="radio"
                       name="format"
                       value={format.key}
-                      defaultChecked={index === 0}
+                      defaultChecked={format.key === defaultFormat}
                       className="mt-1"
                     />
                     <span>
@@ -189,12 +205,12 @@ export default async function NewPublicationPage({
           </section>
 
           <div className="flex justify-end">
-            <button
-              type="submit"
-              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+            <SubmitButton
+              pendingLabel="Creando borrador…"
+              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
             >
               Crear borrador y abrir Content Studio →
-            </button>
+            </SubmitButton>
           </div>
         </form>
 
@@ -215,6 +231,33 @@ export default async function NewPublicationPage({
           ) : (
             <p className="mt-4 text-sm text-[var(--muted)]">La idea no contiene notas adicionales.</p>
           )}
+
+          {recommendation ? (
+            <div className="mt-5 border-t border-slate-100 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-700">
+                Recomendación de Suggestion Engine
+              </p>
+              <dl className="mt-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-[var(--muted)]">Historia</dt>
+                  <dd className="font-medium">{recommendation.storyType}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-[var(--muted)]">Formato</dt>
+                  <dd className="font-medium">{recommendation.format}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-[var(--muted)]">Diseño</dt>
+                  <dd className="text-right font-medium">
+                    {recommendation.designFamily} · {recommendation.archetypeKey}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                Historia y formato se precargan como punto de partida. El diseño sigue siendo una decisión editable en Content Studio.
+              </p>
+            </div>
+          ) : null}
         </aside>
       </div>
     </div>
