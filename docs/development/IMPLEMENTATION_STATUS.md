@@ -16,11 +16,11 @@ Supabase, Vercel, Buffer y el canal LinkedIn están integrados. Se ha validado u
 
 La biblioteca visual V1 dispone de implementación runtime para **12 de 12 arquetipos**, además de Build Note.
 
-Suggestion Engine dispone ya de adquisición de señales, memoria ligera, lectura GitHub preparada y una frontera de IA aprobada e implementada a nivel de contrato/cliente. La generación real de Suggestions permanece detenida hasta cerrar su persistencia y ciclo de vida.
+Suggestion Engine ya dispone de adquisición de señales, memoria ligera, lectura GitHub preparada, frontera OpenAI y persistencia/revisión de Suggestions.
 
 ## Arquitectura
 
-Gates aprobados:
+Gates aprobados hasta AG-013:
 
 - AG-001 — Tailwind CSS + shadcn/ui y renderer propio.
 - AG-002 — Supabase Auth personal.
@@ -34,14 +34,15 @@ Gates aprobados:
 - AG-010 — source adapters + `source_signals`.
 - AG-011 — GitHub fine-grained PAT read-only + allowlist.
 - AG-012 — OpenAI detrás de `SuggestionModel` con Structured Outputs.
+- AG-013 — `suggestions` persistentes + trazabilidad a señales + revisión humana.
 
-Decisiones registradas hasta **ADR-015**.
+Decisiones registradas hasta **ADR-016**.
 
 ### Gate abierto
 
-**AG-013 — Persistencia y ciclo de vida de Suggestions.**
+**AG-014 — Enriquecimiento de contexto para Suggestion Engine.**
 
-`docs/architecture/proposals/AG-013_SUGGESTION_PERSISTENCE_AND_LIFECYCLE.md`
+`docs/architecture/proposals/AG-014_SUGGESTION_CONTEXT_ENRICHMENT.md`
 
 ## Datos y Supabase
 
@@ -51,16 +52,27 @@ Migraciones principales:
 2. `add_fk_indexes`;
 3. `public_publishable_renders`;
 4. `add_publication_visual_config`;
-5. `add_source_signals`.
+5. `add_source_signals`;
+6. `add_suggestions`.
+
+Nuevas entidades de Suggestion Engine:
+
+```text
+source_signals
+      ↑
+      │ suggestion_source_signals
+      │
+suggestions
+      │
+      └── converted_idea_id → ideas
+```
+
+`suggestions` y `suggestion_source_signals` están creadas en el proyecto Supabase real, con RLS y relaciones que garantizan el mismo `user_id`.
 
 Buckets:
 
 - `content-publisher`: privado para fuentes;
 - `content-publisher-published`: lectura pública para renders finales.
-
-RLS protege los datos por `user_id`.
-
-No se ha creado todavía una tabla `suggestions`; depende de AG-013.
 
 ## Producto V1
 
@@ -79,9 +91,7 @@ Implementado:
 - historial y reconciliación Buffer bajo demanda;
 - política de Storage documentada.
 
-## Suggestion Engine — adquisición de señales
-
-Arquitectura:
+## Suggestion Engine — flujo implementado
 
 ```text
 Fuente original
@@ -90,20 +100,22 @@ Source Adapter
       ↓
 source_signals
       ↓
-Suggestion Engine
+prefiltro
       ↓
 SuggestionModel
       ↓
-Suggestion
+OpenAI adapter
       ↓
-revisión humana
+suggestions
       ↓
-Idea
+Aceptar / Descartar
+      ↓
+Convertir en Idea
 ```
 
-`source_signals` conserva solo referencias, fingerprint, título/resumen, fecha, metadata ligera y estado de análisis. No replica repositorios ni documentos completos.
+### Adquisición de señales
 
-Fuentes locales implementadas:
+Fuentes locales:
 
 - Ideas manuales;
 - Historial editorial.
@@ -122,22 +134,20 @@ Configuración operativa:
 
 `docs/operations/GITHUB_SOURCE_READER_SETUP.md`
 
-## Suggestion Engine — IA AG-012
+### IA
 
-Decisión: OpenAI como primer proveedor detrás del contrato interno `SuggestionModel`.
+OpenAI es el primer proveedor detrás del contrato interno `SuggestionModel`.
 
-Código preparado:
+Protecciones:
 
-- tipos internos de `SuggestionCandidate`;
-- preselección determinista de hasta 20 señales;
-- límite de hasta 5 propuestas por ejecución;
-- cliente server-side para Responses API;
+- hasta 20 señales por ejecución;
+- hasta 5 propuestas;
 - Structured Outputs con JSON Schema estricto;
-- salida con historia, formato, familia visual, arquetipo, prioridad y confianza;
-- comprobación de que los IDs fuente devueltos pertenecen al lote enviado;
-- modelo configurable por entorno;
-- solicitudes con `store: false`;
-- no se envía `metadata` arbitraria en el primer contrato.
+- validación de IDs de señales;
+- modelo configurable;
+- `store: false`;
+- no se envía `metadata` arbitraria;
+- no se envían repositorios completos en la implementación actual.
 
 Variables preparadas:
 
@@ -146,11 +156,36 @@ OPENAI_API_KEY
 OPENAI_SUGGESTION_MODEL
 ```
 
-No se configura ningún secreto en el repositorio. La activación operativa está documentada en:
+La configuración manual está documentada en:
 
 `docs/operations/OPENAI_SUGGESTION_ENGINE_SETUP.md`
 
-La generación real no se expone todavía en UI porque AG-013 debe definir dónde viven las Suggestions y cómo se aceptan/descartan.
+### Persistencia y revisión — AG-013
+
+Implementado:
+
+- tabla `suggestions`;
+- tabla `suggestion_source_signals`;
+- fingerprint de generación;
+- estados `new`, `accepted`, `dismissed`, `converted`;
+- bandeja `/suggestions`;
+- acción `Generar sugerencias` cuando OpenAI esté configurado;
+- `Aceptar`;
+- `Descartar`;
+- `Convertir en Idea`;
+- `ideas.source_type = suggestion-engine` para Ideas derivadas;
+- trazabilidad hasta las señales originales;
+- señales usadas marcadas `suggested` para evitar reprocesamiento ciego.
+
+La generación real permanecerá inactiva mientras las variables OpenAI no estén configuradas en Vercel.
+
+## Repositorio público
+
+El repositorio se mantiene público de forma intencionada como decisión operativa de CI. La postura de seguridad está documentada en:
+
+`docs/operations/PUBLIC_REPOSITORY_SECURITY_POSTURE.md`
+
+Los secretos continúan fuera de GitHub; `.env`/`.env.local` están ignorados y el runtime utiliza variables server-side.
 
 ## Buffer → LinkedIn
 
@@ -165,8 +200,6 @@ Implementado:
 - reconciliación bajo demanda;
 - `Actualizar estado`.
 
-La reconciliación es de lectura respecto a Buffer: no publica, reprograma ni borra contenido.
-
 ## Política de Storage
 
 `docs/operations/STORAGE_RETENTION_POLICY.md`
@@ -180,9 +213,9 @@ Criterio V1:
 
 ## Calidad y despliegue
 
-GitHub Actions ejecuta instalación, ESLint, TypeScript y build Next.js.
+La implementación de persistencia/UI de Suggestions ha superado instalación, ESLint, TypeScript y build de Next.js en GitHub Actions.
 
-Vercel ha alcanzado temporalmente su `build-rate-limit` por el elevado número de cambios del día. Esta situación operativa puede retrasar deployments, pero no cambia el estado del código validado por CI.
+Vercel sigue pudiendo rechazar deployments temporales por `build-rate-limit`. El carácter público del repositorio resuelve la estrategia de minutos de GitHub Actions, pero es independiente de los límites de build de Vercel.
 
 ## Estado de V1
 
@@ -197,4 +230,4 @@ Pendientes manuales con efecto externo:
 
 ## Próxima frontera
 
-El trabajo autónomo se detiene en **AG-013** antes de crear persistencia de Suggestions o activar llamadas reales a OpenAI desde la interfaz.
+El trabajo autónomo se detiene en **AG-014** antes de decidir si Suggestion Engine debe recuperar contexto profundo y efímero de GitHub/Knowledge Base o continuar exclusivamente con señales ligeras.
