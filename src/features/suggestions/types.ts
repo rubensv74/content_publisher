@@ -9,6 +9,14 @@ import type { SourceSignalSourceType } from "@/features/source-signals/types";
 export const SUGGESTION_PRIORITIES = ["low", "medium", "high"] as const;
 export type SuggestionPriority = (typeof SUGGESTION_PRIORITIES)[number];
 
+export const SUGGESTION_STATUSES = [
+  "new",
+  "accepted",
+  "dismissed",
+  "converted",
+] as const;
+export type SuggestionStatus = (typeof SUGGESTION_STATUSES)[number];
+
 export type SuggestionModelSignal = {
   id: string;
   sourceType: SourceSignalSourceType;
@@ -31,6 +39,29 @@ export type SuggestionCandidate = {
   archetypeKey: string;
   priority: SuggestionPriority;
   confidence: number;
+};
+
+export type SuggestionSourceSummary = {
+  id: string;
+  sourceType: SourceSignalSourceType;
+  sourceLocator: string;
+  sourceRef: string;
+  title: string;
+};
+
+export type SuggestionRecord = SuggestionCandidate & {
+  id: string;
+  sourceSignals: SuggestionSourceSummary[];
+  status: SuggestionStatus;
+  provider: string;
+  model: string;
+  generationFingerprint: string;
+  acceptedAt: string | null;
+  dismissedAt: string | null;
+  convertedAt: string | null;
+  convertedIdeaId: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type SuggestionModelRequest = {
