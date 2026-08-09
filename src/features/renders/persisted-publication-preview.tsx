@@ -8,6 +8,7 @@ import { BoldStatementPreview } from "@/publication-renderer/preview/bold-statem
 import { BuildNotePreview } from "@/publication-renderer/preview/build-note-preview";
 import { HeroScreenshotPreview } from "@/publication-renderer/preview/hero-screenshot-preview";
 import { ProcessStepsPreview } from "@/publication-renderer/preview/process-steps-preview";
+import { SplitScreenshotPreview } from "@/publication-renderer/preview/split-screenshot-preview";
 import { StepByStepPreview } from "@/publication-renderer/preview/step-by-step-preview";
 
 import { persistFinalRender } from "./persist-final-render";
@@ -41,6 +42,15 @@ export function PersistedPublicationPreview({
   if (publication.archetypeKey === "hero-screenshot") {
     return (
       <HeroScreenshotPreview
+        publication={publication}
+        persistFinalRender={persistenceHandler}
+      />
+    );
+  }
+
+  if (publication.archetypeKey === "split-screenshot") {
+    return (
+      <SplitScreenshotPreview
         publication={publication}
         persistFinalRender={persistenceHandler}
       />
