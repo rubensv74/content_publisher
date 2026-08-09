@@ -4,16 +4,18 @@ Aplicación web personal para convertir ideas, aprendizajes y desarrollos reales
 
 ## Objetivo de la V1
 
-La V1 debe permitir completar este recorrido sin depender de Canva, PowerPoint u otra herramienta intermedia:
+La V1 permite recorrer sin depender de Canva, PowerPoint u otra herramienta intermedia:
 
 **Idea → contenido → diseño → previsualización → generación → publicación/programación en LinkedIn**
 
 ## Estado actual
 
-La cimentación y las decisiones de arquitectura necesarias para la V1 están cerradas. El producto ya dispone de una base ejecutable y el flujo técnico alcanza:
+Content Publisher está en **Release Candidate de V1**.
+
+El flujo técnico operativo alcanza:
 
 ```text
-IDEA → STORY → FORMAT → DESIGN → PREVIEW → RENDER READY → PUBLISH
+IDEA → STORY → FORMAT → DESIGN → PREVIEW → RENDER READY → BUFFER → LINKEDIN
 ```
 
 Entre las capacidades implementadas se encuentran:
@@ -23,14 +25,24 @@ Entre las capacidades implementadas se encuentran:
 - Content Studio;
 - selección de formato, arquetipo y variante;
 - identidad visual centralizada;
+- biblioteca privada de recursos;
+- configuración visual especializada por arquetipo;
+- 12/12 arquetipos objetivo de V1 implementados, más Build Note;
 - preview mediante el renderer React propio;
 - exportación PNG y PDF;
 - persistencia de renders finales en Supabase Storage;
+- protección frente a renders obsoletos;
 - integración server-side con Buffer;
+- descubrimiento real del canal LinkedIn;
+- drafts reales validados en Buffer;
+- programación y publicación inmediata implementadas con confirmación explícita;
+- reconciliación bajo demanda de estados de Buffer;
 - Publishing Jobs e historial editorial;
 - workflow de calidad en GitHub.
 
-La creación real de publicaciones mediante Buffer necesita configurar `BUFFER_API_KEY` en el entorno de ejecución y completar la validación operativa de extremo a extremo. El estado técnico detallado vive en `docs/development/IMPLEMENTATION_STATUS.md`.
+La única validación funcional de extremo a extremo que sigue pendiente es realizar deliberadamente una publicación pública real en LinkedIn y comprobar su resultado. Esta acción no forma parte de las pruebas automáticas.
+
+El estado técnico detallado vive en `docs/development/IMPLEMENTATION_STATUS.md` y el cierre de V1 se controla en `docs/development/V1_RELEASE_CHECKLIST.md`.
 
 ## Plataforma
 
@@ -94,7 +106,7 @@ npm run build
 
 ## Aprender mientras construimos
 
-Content Publisher también se utilizará como proyecto práctico para consolidar React, TypeScript, Next.js, Supabase y Git sin separar el aprendizaje del desarrollo real.
+Content Publisher también se utiliza como proyecto práctico para consolidar React, TypeScript, Next.js, Supabase y Git sin separar el aprendizaje del desarrollo real.
 
 La metodología está documentada en:
 
@@ -119,10 +131,10 @@ La IA puede acelerar el trabajo, pero no debe introducir cambios que no podamos 
 
 ## Documentación
 
-- `docs/product/`: visión, alcance y roadmap.
+- `docs/product/`: visión, alcance, roadmap y guía de uso.
 - `docs/architecture/`: arquitectura, gates y ADR.
 - `docs/design/`: sistema visual, arquetipos y reglas de diseño.
 - `docs/research/`: investigación y fuentes externas.
-- `docs/development/`: estado de implementación, método de trabajo y aprendizaje.
-- `docs/operations/`: puesta en marcha e integraciones operativas.
+- `docs/development/`: estado de implementación, checklist de cierre, método de trabajo y aprendizaje.
+- `docs/operations/`: puesta en marcha, integraciones y política de Storage.
 - `docs/knowledge/candidates/`: conocimiento reutilizable candidato a trasladarse a la base de conocimiento general.
