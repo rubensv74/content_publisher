@@ -20,6 +20,19 @@ const CREATE_POST_MUTATION = `
   }
 `;
 
+const GET_POST_QUERY = `
+  query GetPost($input: PostInput!) {
+    post(input: $input) {
+      id
+      status
+      dueAt
+      sentAt
+      externalLink
+      updatedAt
+    }
+  }
+`;
+
 const DELETE_POST_MUTATION = `
   mutation DeletePost($input: DeletePostInput!) {
     deletePost(input: $input) {
@@ -35,6 +48,14 @@ const DELETE_POST_MUTATION = `
 `;
 
 export type BufferPublishAction = "publish-now" | "schedule" | "draft";
+
+export type BufferPostStatus =
+  | "draft"
+  | "error"
+  | "needs_approval"
+  | "scheduled"
+  | "sending"
+  | "sent";
 
 export type BufferPublishMedia =
   | {
@@ -60,8 +81,17 @@ export type BufferCreatedPost = {
   id: string;
   dueAt?: string | null;
   externalLink?: string | null;
-  status?: string;
+  status?: BufferPostStatus;
   shareMode?: string;
+};
+
+export type BufferPostSnapshot = {
+  id: string;
+  status: BufferPostStatus;
+  dueAt?: string | null;
+  sentAt?: string | null;
+  externalLink?: string | null;
+  updatedAt?: string | null;
 };
 
 type CreatePostPayload = {
@@ -70,6 +100,10 @@ type CreatePostPayload = {
     post?: BufferCreatedPost;
     message?: string;
   };
+};
+
+type GetPostPayload = {
+  post: BufferPostSnapshot;
 };
 
 type DeletePostPayload = {
@@ -154,6 +188,24 @@ export async function createBufferPost(
   }
 
   return data.createPost.post;
+}
+
+export async function getBufferPost(postId: string): Promise<BufferPostSnapshot> {
+  if (!postId.trim()) {
+    throw new BufferApiError(
+      "No se ha indicado el identificador del post de Buffer.",
+      "graphql",
+    );
+  }
+
+  const data = await bufferGraphQL<
+    GetPostPayload,
+    { input: { id: string } }
+  >(GET_POST_QUERY, {
+    input: { id: postId },
+  });
+
+  return data.post;
 }
 
 export async function deleteBufferPost(postId: string): Promise<string> {
