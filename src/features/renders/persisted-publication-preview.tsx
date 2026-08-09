@@ -7,6 +7,7 @@ import type { FinalRenderPayload } from "@/publication-renderer/export/final-ren
 import { BoldStatementPreview } from "@/publication-renderer/preview/bold-statement-preview";
 import { BuildNotePreview } from "@/publication-renderer/preview/build-note-preview";
 import { HeroScreenshotPreview } from "@/publication-renderer/preview/hero-screenshot-preview";
+import { ProcessStepsPreview } from "@/publication-renderer/preview/process-steps-preview";
 import { StepByStepPreview } from "@/publication-renderer/preview/step-by-step-preview";
 
 import { persistFinalRender } from "./persist-final-render";
@@ -40,6 +41,15 @@ export function PersistedPublicationPreview({
   if (publication.archetypeKey === "hero-screenshot") {
     return (
       <HeroScreenshotPreview
+        publication={publication}
+        persistFinalRender={persistenceHandler}
+      />
+    );
+  }
+
+  if (publication.archetypeKey === "process-steps") {
+    return (
+      <ProcessStepsPreview
         publication={publication}
         persistFinalRender={persistenceHandler}
       />
