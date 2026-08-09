@@ -5,6 +5,16 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
+const ALLOWED_ASSET_ROLES = ["hero", "before", "after"] as const;
+type AllowedAssetRole = (typeof ALLOWED_ASSET_ROLES)[number];
+
+function isAllowedRole(value: FormDataEntryValue | null): value is AllowedAssetRole {
+  return (
+    typeof value === "string" &&
+    (ALLOWED_ASSET_ROLES as readonly string[]).includes(value)
+  );
+}
+
 async function getAuthenticatedUserId() {
   const supabase = await createClient();
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
@@ -17,37 +27,11 @@ async function getAuthenticatedUserId() {
   return { supabase, userId };
 }
 
-async function touchPublication(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+async function replacePublicationAssetRole(
   publicationId: string,
-  userId: string,
+  assetId: string,
+  role: AllowedAssetRole,
 ) {
-  const { error } = await supabase
-    .from("publications")
-    .update({ updated_at: new Date().toISOString() })
-    .eq("id", publicationId)
-    .eq("user_id", userId);
-
-  if (error) {
-    throw new Error(
-      `El recurso cambió, pero no se pudo invalidar el render anterior: ${error.message}`,
-    );
-  }
-}
-
-export async function setPublicationHeroAsset(formData: FormData) {
-  const publicationId = formData.get("publicationId");
-  const assetId = formData.get("assetId");
-
-  if (
-    typeof publicationId !== "string" ||
-    !publicationId ||
-    typeof assetId !== "string" ||
-    !assetId
-  ) {
-    throw new Error("Selecciona una publicación y un recurso válidos.");
-  }
-
   const { supabase, userId } = await getAuthenticatedUserId();
   const [{ data: publication }, { data: asset }] = await Promise.all([
     supabase
@@ -73,7 +57,7 @@ export async function setPublicationHeroAsset(formData: FormData) {
     .delete()
     .eq("publication_id", publicationId)
     .eq("user_id", userId)
-    .eq("role", "hero");
+    .eq("role", role);
 
   if (removeError) {
     throw new Error(`No se pudo reemplazar el recurso anterior: ${removeError.message}`);
@@ -83,8 +67,8 @@ export async function setPublicationHeroAsset(formData: FormData) {
     user_id: userId,
     publication_id: publicationId,
     asset_id: assetId,
-    role: "hero",
-    sort_order: 0,
+    role,
+    sort_order: role === "after" ? 1 : 0,
     usage_config: {},
   });
 
@@ -92,8 +76,42 @@ export async function setPublicationHeroAsset(formData: FormData) {
     throw new Error(`No se pudo asociar el recurso: ${insertError.message}`);
   }
 
-  await touchPublication(supabase, publicationId, userId);
   revalidatePath(`/publications/${publicationId}/studio`);
+}
+
+async function removePublicationAssetRoleByName(
+  publicationId: string,
+  role: AllowedAssetRole,
+) {
+  const { supabase, userId } = await getAuthenticatedUserId();
+  const { error } = await supabase
+    .from("publication_assets")
+    .delete()
+    .eq("publication_id", publicationId)
+    .eq("user_id", userId)
+    .eq("role", role);
+
+  if (error) {
+    throw new Error(`No se pudo retirar el recurso: ${error.message}`);
+  }
+
+  revalidatePath(`/publications/${publicationId}/studio`);
+}
+
+export async function setPublicationHeroAsset(formData: FormData) {
+  const publicationId = formData.get("publicationId");
+  const assetId = formData.get("assetId");
+
+  if (
+    typeof publicationId !== "string" ||
+    !publicationId ||
+    typeof assetId !== "string" ||
+    !assetId
+  ) {
+    throw new Error("Selecciona una publicación y un recurso válidos.");
+  }
+
+  await replacePublicationAssetRole(publicationId, assetId, "hero");
 }
 
 export async function removePublicationHeroAsset(formData: FormData) {
@@ -103,18 +121,38 @@ export async function removePublicationHeroAsset(formData: FormData) {
     throw new Error("No se ha indicado la publicación.");
   }
 
-  const { supabase, userId } = await getAuthenticatedUserId();
-  const { error } = await supabase
-    .from("publication_assets")
-    .delete()
-    .eq("publication_id", publicationId)
-    .eq("user_id", userId)
-    .eq("role", "hero");
+  await removePublicationAssetRoleByName(publicationId, "hero");
+}
 
-  if (error) {
-    throw new Error(`No se pudo retirar el recurso: ${error.message}`);
+export async function setPublicationAssetRole(formData: FormData) {
+  const publicationId = formData.get("publicationId");
+  const assetId = formData.get("assetId");
+  const role = formData.get("role");
+
+  if (
+    typeof publicationId !== "string" ||
+    !publicationId ||
+    typeof assetId !== "string" ||
+    !assetId ||
+    !isAllowedRole(role)
+  ) {
+    throw new Error("Selecciona una publicación, recurso y rol válidos.");
   }
 
-  await touchPublication(supabase, publicationId, userId);
-  revalidatePath(`/publications/${publicationId}/studio`);
+  await replacePublicationAssetRole(publicationId, assetId, role);
+}
+
+export async function removePublicationAssetRole(formData: FormData) {
+  const publicationId = formData.get("publicationId");
+  const role = formData.get("role");
+
+  if (
+    typeof publicationId !== "string" ||
+    !publicationId ||
+    !isAllowedRole(role)
+  ) {
+    throw new Error("No se ha indicado una publicación o rol válido.");
+  }
+
+  await removePublicationAssetRoleByName(publicationId, role);
 }
