@@ -15,4 +15,5 @@ export const heroScreenshotDefinition: ArchetypeDefinition = {
     "professional-insight",
   ],
   variants: ["framed"],
+  requiredAssetRoles: ["hero"],
 };
