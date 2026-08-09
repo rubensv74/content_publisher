@@ -9,6 +9,8 @@ export type PublishableRender = {
   thumbnailUrl?: string;
   createdAt: string;
   pageCount?: number | null;
+  archetypeKey?: string | null;
+  variantKey?: string | null;
 };
 
 type RenderRow = {
@@ -39,6 +41,17 @@ function thumbnailRenderId(context: unknown) {
   return typeof companion?.thumbnailRenderId === "string"
     ? companion.thumbnailRenderId
     : null;
+}
+
+function designSnapshot(context: unknown) {
+  const root = asRecord(context);
+  const design = asRecord(root?.design);
+
+  return {
+    archetypeKey:
+      typeof design?.archetypeKey === "string" ? design.archetypeKey : null,
+    variantKey: typeof design?.variantKey === "string" ? design.variantKey : null,
+  };
 }
 
 export async function getPublishableRenders(
@@ -77,6 +90,7 @@ export async function getPublishableRenders(
             .from(PUBLISHED_BUCKET)
             .getPublicUrl(thumbnail.storage_path).data.publicUrl
         : undefined;
+      const design = designSnapshot(row.render_context);
 
       return {
         id: row.id,
@@ -85,6 +99,8 @@ export async function getPublishableRenders(
         thumbnailUrl,
         createdAt: row.created_at,
         pageCount: row.page_count,
+        archetypeKey: design.archetypeKey,
+        variantKey: design.variantKey,
       };
     });
 }
