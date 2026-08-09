@@ -105,27 +105,23 @@ La propuesta y alternativas evaluadas se conservan en:
 
 ### AG-009 — Reconciliación de estados de Buffer
 
-**Estado: Abierto — pendiente de decisión.**
+**Estado: Aprobado — Opción A.**
 
-Buffer puede devolver estados no terminales como `scheduled` o `sending` que posteriormente evolucionan a `sent` o `error`. Debe decidirse cuándo Content Publisher vuelve a consultar Buffer para mantener `publishing_jobs` e Historial sincronizados.
+La V1 reconcilia estados de Buffer bajo demanda cuando el usuario abre Historial y mediante una acción manual de actualización. No se introduce polling periódico ni Vercel Cron en V1.
 
-Alternativas:
+El estado remoto exacto se conserva en `provider_payload.bufferStatus` y el estado local de `publishing_jobs` mantiene el vocabulario actual mediante un mapeo explícito. La lectura de Buffer nunca publica, reprograma ni elimina contenido.
 
-- **A** — reconciliación bajo demanda al abrir Historial/Studio **(recomendada para V1)**;
-- **B** — polling periódico en segundo plano;
-- **C** — híbrida: bajo demanda + polling periódico.
+Decisión registrada en `ADR-012_BUFFER_STATUS_RECONCILIATION_ON_DEMAND.md`.
 
-Propuesta completa:
+La propuesta y alternativas evaluadas se conservan en:
 
 `docs/architecture/proposals/AG-009_BUFFER_STATUS_RECONCILIATION.md`
 
-No se implementará sincronización automática hasta resolver este gate.
-
 ## Estado global
 
-**Existe un gate de arquitectura abierto: AG-009.**
+**No existe un gate de arquitectura abierto en este momento.**
 
-La cobertura estructural de los 12 arquetipos V1 está implementada y AG-008 ha quedado cerrado. El desarrollo autónomo se detiene ahora en la decisión sobre reconciliación de estados remotos de Buffer.
+El desarrollo puede continuar de manera autónoma aplicando AG-009. Se abrirá un nuevo gate únicamente cuando aparezca una decisión estructural nueva.
 
 ## Regla
 
