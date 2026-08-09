@@ -117,11 +117,29 @@ La propuesta y alternativas evaluadas se conservan en:
 
 `docs/architecture/proposals/AG-009_BUFFER_STATUS_RECONCILIATION.md`
 
+### AG-010 — Estrategia de fuentes para Suggestion Engine
+
+**Estado: Abierto — pendiente de decisión.**
+
+La V1 está en Release Candidate y el siguiente bloque de producto previsto es Suggestion Engine. Antes de implementar el motor debe decidirse cómo leer y recordar señales procedentes de GitHub, la base de conocimiento, historial editorial e ideas existentes.
+
+Alternativas:
+
+- **A** — lectura completa bajo demanda sin persistir señales;
+- **B** — replicar/indexar las fuentes en Supabase;
+- **C** — adaptadores server-side + registro ligero `source_signals`, sin replicar las fuentes completas **(recomendada)**.
+
+La propuesta completa está en:
+
+`docs/architecture/proposals/AG-010_SUGGESTION_ENGINE_SOURCE_STRATEGY.md`
+
+Este gate no decide todavía el proveedor de IA, embeddings, tendencias externas ni automatización programada.
+
 ## Estado global
 
-**No existe un gate de arquitectura abierto en este momento.**
+**Existe un gate de arquitectura abierto: AG-010.**
 
-El desarrollo puede continuar de manera autónoma aplicando AG-009. Se abrirá un nuevo gate únicamente cuando aparezca una decisión estructural nueva.
+La V1 está técnicamente en Release Candidate y permanece pendiente de la validación manual de una programación/publicación real. El desarrollo autónomo del siguiente bloque se detiene ahora antes de introducir persistencia, sincronización o credenciales nuevas para Suggestion Engine.
 
 ## Regla
 
