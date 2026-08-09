@@ -107,6 +107,7 @@ Fuentes previstas:
 - base de conocimiento;
 - historial de publicaciones;
 - ideas manuales;
+- oportunidades detectadas por Opportunity Radar;
 - tendencias externas cuando sean relevantes.
 
 El motor deberá poder proponer:
@@ -117,6 +118,36 @@ El motor deberá poder proponer:
 - formato;
 - familia visual;
 - prioridad o potencial.
+
+## Opportunity Radar
+
+Capa de inteligencia profesional que detecta novedades tecnológicas y las convierte en oportunidades accionables antes de decidir si merecen convertirse en contenido.
+
+Flujo objetivo:
+
+```text
+fuente externa
+→ source signal
+→ opportunity
+→ investigación / experimento / proyecto
+→ caso de estudio
+→ suggestion
+→ idea
+→ publication
+```
+
+Principios:
+
+- no funcionar como agregador generalista de noticias;
+- priorizar pocas señales de alta relevancia;
+- conectar novedades con aprendizaje, proyectos y portfolio;
+- mantener trazabilidad a la fuente original;
+- separar una señal externa de una experiencia realmente realizada;
+- aprovechar Suggestion Engine en lugar de duplicar un segundo motor editorial.
+
+La definición funcional vive en `docs/product/OPPORTUNITY_RADAR.md` y la planificación incremental en `docs/development/OPPORTUNITY_RADAR_PLAN.md`.
+
+La adquisición de fuentes externas está bloqueada por el gate `docs/architecture/proposals/AG-014_OPPORTUNITY_RADAR_EXTERNAL_SOURCES.md` hasta que se cierre explícitamente la decisión arquitectónica.
 
 ## Analítica editorial
 
@@ -133,3 +164,5 @@ Solo después de validar LinkedIn. La arquitectura debe permitir futuras salidas
 ## Automatización asistida
 
 Detección de cambios relevantes en fuentes conectadas y creación de propuestas de contenido, siempre con revisión humana antes de publicar.
+
+Para Opportunity Radar, la programación automática de rastreos se decidirá únicamente después de validar el refresco bajo demanda y mediante un gate específico de scheduler, frecuencia, límites, observabilidad y costes.
