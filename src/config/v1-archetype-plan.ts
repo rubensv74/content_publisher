@@ -99,5 +99,6 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "carousel",
     use: "Contar un proyecto completo desde el contexto hasta el aprendizaje.",
     variants: ["product", "architecture", "data"],
+    implementationKey: "case-study",
   },
 ];
