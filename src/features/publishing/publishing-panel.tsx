@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, Send, SquarePen } from "lucide-react";
-import { useMemo, useState } from "react";
+import { CalendarClock, CheckCircle2, Send, SquarePen } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useRef, useState, useTransition } from "react";
 
 import type { BufferConnectionStatus } from "@/lib/publishing/buffer/account";
 
@@ -22,6 +23,18 @@ function renderLabel(render: PublishableRender) {
   return `${type}${pages} · ${created}`;
 }
 
+function successMessage(action: "publish-now" | "schedule" | "draft") {
+  if (action === "draft") {
+    return "Draft guardado correctamente en Buffer. No se ha publicado en LinkedIn.";
+  }
+
+  if (action === "schedule") {
+    return "Publicación programada correctamente en Buffer.";
+  }
+
+  return "Buffer ha aceptado la publicación para enviarla a LinkedIn.";
+}
+
 export function PublishingPanel({
   publicationId,
   renders,
@@ -31,7 +44,16 @@ export function PublishingPanel({
   renders: PublishableRender[];
   bufferStatus: BufferConnectionStatus;
 }) {
+  const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [scheduledLocal, setScheduledLocal] = useState("");
+  const [activeAction, setActiveAction] = useState<
+    "publish-now" | "schedule" | "draft" | null
+  >(null);
+  const [resultMessage, setResultMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
   const scheduledFor = useMemo(() => {
     if (!scheduledLocal) {
       return "";
@@ -89,6 +111,44 @@ export function PublishingPanel({
     );
   }
 
+  function submit(action: "publish-now" | "schedule" | "draft") {
+    const form = formRef.current;
+
+    if (!form || isPending) {
+      return;
+    }
+
+    if (action === "schedule" && !scheduledFor) {
+      setResultMessage(null);
+      setErrorMessage("Selecciona una fecha y hora válida antes de programar.");
+      return;
+    }
+
+    const formData = new FormData(form);
+    formData.set("publishAction", action);
+    formData.set("scheduledFor", scheduledFor);
+
+    setActiveAction(action);
+    setResultMessage(null);
+    setErrorMessage(null);
+
+    startTransition(async () => {
+      try {
+        await publishPublication(formData);
+        setResultMessage(successMessage(action));
+        router.refresh();
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "No se pudo completar la operación con Buffer.",
+        );
+      } finally {
+        setActiveAction(null);
+      }
+    });
+  }
+
   return (
     <section className="rounded-2xl border border-[var(--border)] bg-white p-5">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -99,7 +159,20 @@ export function PublishingPanel({
         Selecciona el render y el canal. “Publicar ahora” crea una publicación real en LinkedIn a través de Buffer.
       </p>
 
-      <form action={publishPublication} className="mt-5 space-y-4">
+      {resultMessage ? (
+        <div className="mt-4 flex items-start gap-2 rounded-xl bg-emerald-50 px-3.5 py-3 text-sm text-emerald-800" role="status">
+          <CheckCircle2 className="mt-0.5 shrink-0" size={16} />
+          <span>{resultMessage}</span>
+        </div>
+      ) : null}
+
+      {errorMessage ? (
+        <p className="mt-4 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-700" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
+
+      <form ref={formRef} className="mt-5 space-y-4" onSubmit={(event) => event.preventDefault()}>
         <input type="hidden" name="publicationId" value={publicationId} />
         <input type="hidden" name="scheduledFor" value={scheduledFor} />
 
@@ -112,7 +185,8 @@ export function PublishingPanel({
             name="channelId"
             required
             defaultValue={bufferStatus.linkedinChannels[0]?.id}
-            className="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 text-sm"
+            disabled={isPending}
+            className="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 text-sm disabled:opacity-60"
           >
             {bufferStatus.linkedinChannels.map((channel) => (
               <option
@@ -135,7 +209,8 @@ export function PublishingPanel({
             name="renderId"
             required
             defaultValue={renders[0]?.id}
-            className="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 text-sm"
+            disabled={isPending}
+            className="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 text-sm disabled:opacity-60"
           >
             {renders.map((render) => (
               <option
@@ -161,7 +236,8 @@ export function PublishingPanel({
             type="datetime-local"
             value={scheduledLocal}
             onChange={(event) => setScheduledLocal(event.target.value)}
-            className="w-full rounded-xl border border-[var(--border)] px-3 py-2.5 text-sm"
+            disabled={isPending}
+            className="w-full rounded-xl border border-[var(--border)] px-3 py-2.5 text-sm disabled:opacity-60"
           />
           <p className="mt-1.5 text-xs text-[var(--muted)]">
             Se interpreta en la zona horaria de este navegador y se envía a Buffer en ISO 8601.
@@ -170,32 +246,31 @@ export function PublishingPanel({
 
         <div className="grid gap-2">
           <button
-            type="submit"
-            name="publishAction"
-            value="publish-now"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            type="button"
+            onClick={() => submit("publish-now")}
+            disabled={isPending}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
           >
             <Send size={16} />
-            Publicar ahora
+            {isPending && activeAction === "publish-now" ? "Publicando…" : "Publicar ahora"}
           </button>
           <button
-            type="submit"
-            name="publishAction"
-            value="schedule"
-            disabled={!scheduledFor}
+            type="button"
+            onClick={() => submit("schedule")}
+            disabled={!scheduledFor || isPending}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
           >
             <CalendarClock size={16} />
-            Programar
+            {isPending && activeAction === "schedule" ? "Programando…" : "Programar"}
           </button>
           <button
-            type="submit"
-            name="publishAction"
-            value="draft"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold transition hover:bg-slate-50"
+            type="button"
+            onClick={() => submit("draft")}
+            disabled={isPending}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
           >
             <SquarePen size={16} />
-            Guardar draft en Buffer
+            {isPending && activeAction === "draft" ? "Guardando draft…" : "Guardar draft en Buffer"}
           </button>
         </div>
       </form>
