@@ -13,6 +13,8 @@ export type PublishingHistoryItem = {
   renderType?: string | null;
   action: string;
   status: string;
+  providerStatus?: string | null;
+  lastReconciledAt?: string | null;
   scheduledFor?: string | null;
   externalId?: string | null;
   externalUrl?: string | null;
@@ -31,6 +33,7 @@ type JobRow = {
   external_id: string | null;
   external_url: string | null;
   error_message: string | null;
+  provider_payload: unknown;
   created_at: string;
   completed_at: string | null;
 };
@@ -50,12 +53,18 @@ type RenderRow = {
   render_type: string;
 };
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 export async function getPublishingHistory(): Promise<PublishingHistoryItem[]> {
   const supabase = await createClient();
   const { data: jobsData, error: jobsError } = await supabase
     .from("publishing_jobs")
     .select(
-      "id,publication_id,render_id,action,status,scheduled_for,external_id,external_url,error_message,created_at,completed_at",
+      "id,publication_id,render_id,action,status,scheduled_for,external_id,external_url,error_message,provider_payload,created_at,completed_at",
     )
     .order("created_at", { ascending: false })
     .limit(100);
@@ -109,6 +118,7 @@ export async function getPublishingHistory(): Promise<PublishingHistoryItem[]> {
   return jobs.map((job) => {
     const publication = publicationById.get(job.publication_id);
     const render = job.render_id ? renderById.get(job.render_id) : undefined;
+    const providerPayload = asRecord(job.provider_payload);
 
     return {
       id: job.id,
@@ -123,6 +133,14 @@ export async function getPublishingHistory(): Promise<PublishingHistoryItem[]> {
       renderType: render?.render_type,
       action: job.action,
       status: job.status,
+      providerStatus:
+        typeof providerPayload.bufferStatus === "string"
+          ? providerPayload.bufferStatus
+          : null,
+      lastReconciledAt:
+        typeof providerPayload.lastReconciledAt === "string"
+          ? providerPayload.lastReconciledAt
+          : null,
       scheduledFor: job.scheduled_for,
       externalId: job.external_id,
       externalUrl: job.external_url,
