@@ -139,6 +139,24 @@ export function PublishingPanel({
       return;
     }
 
+    if (
+      action === "publish-now" &&
+      !window.confirm(
+        "Esta acción publicará de verdad en LinkedIn a través de Buffer. ¿Confirmas que quieres publicar ahora?",
+      )
+    ) {
+      return;
+    }
+
+    if (
+      action === "schedule" &&
+      !window.confirm(
+        `Esta acción programará una publicación real para ${new Date(scheduledFor).toLocaleString("es-ES")}. ¿Confirmas la programación?`,
+      )
+    ) {
+      return;
+    }
+
     const formData = new FormData(form);
     formData.set("publishAction", action);
     formData.set("scheduledFor", scheduledFor);
@@ -172,7 +190,7 @@ export function PublishingPanel({
       </p>
       <h2 className="mt-3 font-semibold">Buffer → LinkedIn</h2>
       <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-        Selecciona el render y el canal. “Publicar ahora” crea una publicación real en LinkedIn a través de Buffer.
+        Selecciona el render y el canal. “Publicar ahora” crea una publicación real en LinkedIn a través de Buffer y requiere confirmación explícita.
       </p>
 
       {resultMessage ? (
