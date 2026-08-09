@@ -1,181 +1,81 @@
-# Selección propuesta de arquetipos para V1
+# Selección de arquetipos para V1
 
-Estado: selección de diseño para implementación posterior.
+Estado: **selección cerrada — 12/12 con implementación base runtime**.
 
-La selección busca cubrir la mayoría de publicaciones profesionales previsibles sin duplicar composiciones. Se priorizan arquetipos reutilizables, legibles en móvil y compatibles con contenido técnico real.
+La selección cubre la mayoría de publicaciones profesionales previsibles sin duplicar composiciones. Se priorizan arquetipos reutilizables, legibles en móvil y compatibles con contenido técnico real.
 
-## 12 arquetipos candidatos
+> `implemented` en V1 significa que existe al menos una variante funcional integrada en Content Studio, con preview y exportación final. Las variantes adicionales previstas siguen siendo trabajo de refinamiento, no nuevos arquetipos.
 
-### 1. ED-01 — Bold Statement
+## 12 arquetipos V1
 
-Uso: idea fuerte, aprendizaje, reflexión, opinión técnica.
+| Código | Arquetipo | Familia | Runtime | Variante base V1 | Estado |
+|---|---|---|---|---|---|
+| ED-01 | Bold Statement | Editorial | `bold-statement` | `light` | Implementado |
+| ED-03 | Metric Hero | Editorial | `metric-hero` | `single-metric` | Implementado |
+| PR-01 | Hero Screenshot | Product | `hero-screenshot` | `framed` | Implementado |
+| PR-02 | Split Screenshot | Product | `split-screenshot` | `left-right` | Implementado |
+| PR-03 | Annotated Screenshot | Product | `annotated-screenshot` | `numbered` | Implementado |
+| PR-04 | Before / After | Product | `before-after` | `split` | Implementado |
+| TE-01 | Architecture Flow | Technical | `architecture-flow` | base | Implementado |
+| TE-02 | Code Focus | Technical | `code-focus` | `code-first` | Implementado |
+| TE-03 | Process Steps | Technical | `process-steps` | base | Implementado |
+| DA-01 | Data Story | Data | `data-story` | `bars` | Implementado |
+| CA-01 | Tutorial Sequence | Carousel | `step-by-step` | base | Implementado |
+| CA-02 | Case Study | Carousel | `case-study` | base | Implementado |
 
-Estructura:
+Además existe `build-note` como arquetipo editorial adicional operativo utilizado en la primera demo end-to-end.
 
-- etiqueta de dominio;
-- titular dominante;
-- apoyo breve opcional;
-- serie + firma.
+## Uso editorial
 
-Variantes: light, dark, accent.
+### ED-01 — Bold Statement
 
-### 2. ED-03 — Metric Hero
+Idea fuerte, aprendizaje, reflexión u opinión técnica. El titular es el elemento dominante.
 
-Uso: resultados, rendimiento, cifras, comparaciones.
+### ED-03 — Metric Hero
 
-Estructura:
+Resultados, rendimiento, cifras y comparaciones. La métrica abre la historia y el texto explica su significado.
 
-- cifra principal;
-- contexto;
-- explicación;
-- micrográfico opcional;
-- firma.
+### PR-01 — Hero Screenshot
 
-Variantes: single metric, metric + delta, metric + mini chart.
+Mostrar una aplicación, pantalla o prototipo. Requiere un asset principal con rol `hero`.
 
-### 3. PR-01 — Hero Screenshot
+### PR-02 — Split Screenshot
 
-Uso: mostrar una aplicación, pantalla o prototipo.
+Explicar una interfaz sin sacrificar contexto. Combina explicación y screenshot en una sola composición.
 
-Estructura:
+### PR-03 — Annotated Screenshot
 
-- titular corto;
-- screenshot grande;
-- una línea de contexto;
-- firma.
+Explicar decisiones de interfaz o funcionalidades mediante marcadores posicionados sobre un screenshot.
 
-Variantes: framed, edge-to-edge, floating.
+### PR-04 — Before / After
 
-### 4. PR-02 — Split Screenshot
+Mostrar evolución de interfaz, arquitectura visual o resultado mediante dos estados explícitos.
 
-Uso: explicar una interfaz sin sacrificar contexto.
+### TE-01 — Architecture Flow
 
-Estructura:
+Explicar cómo se conectan piezas o decisiones de una solución.
 
-- bloque de texto;
-- screenshot;
-- etiqueta de serie;
-- firma.
+### TE-02 — Code Focus
 
-Variantes: left/right, top/bottom.
+Mostrar SQL, Power Fx, TypeScript, React, Kotlin u otro fragmento de código con contexto, líneas destacadas y explicación.
 
-### 5. PR-03 — Annotated Screenshot
+### TE-03 — Process Steps
 
-Uso: explicar decisiones de interfaz o funcionalidades.
+Métodos de trabajo, procesos o secuencias técnicas.
 
-Estructura:
+### DA-01 — Data Story
 
-- screenshot protagonista;
-- 2–4 marcadores;
-- leyenda breve;
-- firma.
+Power BI, análisis, métricas, rendimiento y decisiones basadas en datos.
 
-Variantes: numbered, focus zones, zoom detail.
+### CA-01 — Tutorial Sequence
 
-### 6. PR-04 — Before / After
+Explicar cómo hacer algo mediante una secuencia de páginas. Exportación PDF con miniatura de portada.
 
-Uso: evolución de interfaz, arquitectura, código o proceso.
+### CA-02 — Case Study
 
-Estructura:
+Contar un proyecto completo desde contexto y problema hasta decisión, resultado y aprendizaje.
 
-- estado anterior;
-- estado actual;
-- cambio principal;
-- aprendizaje.
-
-Variantes: split, stacked, carousel reveal.
-
-### 7. TE-01 — Architecture Flow
-
-Uso: explicar cómo se conectan varias piezas.
-
-Estructura:
-
-- pregunta o titular;
-- 3–6 nodos;
-- relaciones;
-- explicación breve;
-- firma.
-
-Variantes: vertical flow, layered, hub-and-spoke.
-
-### 8. TE-02 — Code Focus
-
-Uso: SQL, Power Fx, TypeScript, React, Kotlin u otro código.
-
-Estructura:
-
-- problema;
-- fragmento corto de código;
-- traducción en lenguaje natural;
-- aprendizaje.
-
-Variantes: code first, explanation first, before/after code.
-
-### 9. TE-03 — Process Steps
-
-Uso: método de trabajo, proceso, checklist técnico.
-
-Estructura:
-
-- objetivo;
-- 3–6 pasos;
-- resultado;
-- firma.
-
-Variantes: vertical, horizontal, timeline.
-
-### 10. DA-01 — Data Story
-
-Uso: Power BI, análisis, métricas, rendimiento.
-
-Estructura:
-
-- insight principal;
-- cifra o gráfico;
-- significado;
-- decisión o consecuencia.
-
-Variantes: KPI, bar/line, comparison.
-
-### 11. CA-01 — Tutorial Sequence
-
-Uso: explicar cómo hacer algo en varias páginas.
-
-Secuencia típica:
-
-1. portada;
-2. problema o resultado esperado;
-3. pasos;
-4. validación;
-5. cierre.
-
-Variantes: short 5-page, standard 7-page, deep 9-page.
-
-### 12. CA-02 — Case Study
-
-Uso: contar un proyecto completo.
-
-Secuencia típica:
-
-1. portada;
-2. contexto;
-3. problema;
-4. restricciones;
-5. decisión;
-6. solución;
-7. resultado;
-8. aprendizaje.
-
-Variantes: product, architecture, data.
-
----
-
-## Familia Data añadida formalmente
-
-La investigación inicial demuestra que datos, Power BI, SQL, métricas de rendimiento y resultados necesitan un tratamiento específico. Por ello se incorpora `Data` como quinta familia de diseño de V1.
-
-Familias de V1:
+## Familias V1
 
 1. Editorial
 2. Product / Screenshot
@@ -199,17 +99,26 @@ Familias de V1:
 | tutorial | CA-01 |
 | proyecto completo | CA-02 |
 
-## Variación esperada
+## Modelo de inputs
 
-Con una media de 2–3 variantes útiles por arquetipo, esta selección puede proporcionar aproximadamente 30–40 apariencias sin mantener 40 plantillas completamente independientes.
+Los arquetipos reutilizan tres fuentes separadas:
 
-## Criterio de implementación
+```text
+structured_content   → narrativa
+publication_assets   → screenshots e imágenes
+visual_config        → métricas, anotaciones, código y parámetros especializados
+```
 
-No se implementarán los 12 a la vez. Se construirán por bloques y cada uno debe validarse con contenido real antes de considerarse aprobado.
+El modelo especializado quedó aprobado en AG-008 / ADR-011.
 
-La primera publicación real debería probar, como mínimo:
+## Próxima fase de diseño
 
-- una composición editorial;
-- una composición con screenshot;
-- una composición técnica;
-- un carrusel.
+La cobertura estructural de V1 está cerrada. El trabajo visual posterior debe centrarse en:
+
+- validar cada arquetipo con contenido real;
+- corregir composición y legibilidad en móvil;
+- incorporar variantes adicionales cuando aporten una diferencia visual real;
+- mantener identidad coherente entre familias;
+- evitar aumentar el catálogo solo por variedad estética.
+
+La meta de 30–40 apariencias se alcanzará principalmente mediante variantes de estos arquetipos, no mediante decenas de templates independientes.
