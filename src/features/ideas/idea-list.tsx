@@ -1,6 +1,9 @@
 import { Archive, FilePlus2, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 
+import { PendingNavigationLink } from "@/components/application/pending-navigation-link";
+import { SubmitButton } from "@/components/application/submit-button";
+
 import { archiveIdea, deleteIdea } from "./actions";
 import type { IdeaRecord } from "./types";
 
@@ -55,13 +58,14 @@ export function IdeaList({ ideas }: { ideas: IdeaRecord[] }) {
 
               {idea.status === "idea" ? (
                 <div className="mt-4">
-                  <Link
+                  <PendingNavigationLink
                     href={`/publications/new?idea=${idea.id}`}
-                    className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                    pendingLabel="Abriendo publicación…"
+                    className="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
                   >
                     <FilePlus2 size={16} />
                     Convertir en publicación
-                  </Link>
+                  </PendingNavigationLink>
                 </div>
               ) : null}
             </div>
@@ -79,27 +83,25 @@ export function IdeaList({ ideas }: { ideas: IdeaRecord[] }) {
               {idea.status === "idea" ? (
                 <form action={archiveIdea}>
                   <input type="hidden" name="ideaId" value={idea.id} />
-                  <button
-                    type="submit"
-                    title="Archivar idea"
-                    aria-label={`Archivar ${idea.title}`}
-                    className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                  <SubmitButton
+                    pendingLabel={<span className="sr-only">Archivando…</span>}
+                    className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-60"
                   >
                     <Archive size={17} />
-                  </button>
+                    <span className="sr-only">Archivar {idea.title}</span>
+                  </SubmitButton>
                 </form>
               ) : null}
 
               <form action={deleteIdea}>
                 <input type="hidden" name="ideaId" value={idea.id} />
-                <button
-                  type="submit"
-                  title="Eliminar idea"
-                  aria-label={`Eliminar ${idea.title}`}
-                  className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-700"
+                <SubmitButton
+                  pendingLabel={<span className="sr-only">Eliminando…</span>}
+                  className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-700 disabled:opacity-60"
                 >
                   <Trash2 size={17} />
-                </button>
+                  <span className="sr-only">Eliminar {idea.title}</span>
+                </SubmitButton>
               </form>
             </div>
           </div>
