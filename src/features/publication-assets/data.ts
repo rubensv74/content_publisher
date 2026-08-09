@@ -49,34 +49,33 @@ export async function getPublicationAssets(
 
   const assets = (assetData ?? []) as unknown as AssetRow[];
   const assetById = new Map(assets.map((asset) => [asset.id, asset]));
+  const result: PublicationAsset[] = [];
 
-  const result = await Promise.all(
-    relations.map(async (relation) => {
-      const asset = assetById.get(relation.asset_id);
-      if (!asset) return null;
+  for (const relation of relations) {
+    const asset = assetById.get(relation.asset_id);
+    if (!asset) continue;
 
-      const { data: signed, error: signedError } = await supabase.storage
-        .from("content-publisher")
-        .createSignedUrl(asset.storage_path, 60 * 60);
+    const { data: signed, error: signedError } = await supabase.storage
+      .from("content-publisher")
+      .createSignedUrl(asset.storage_path, 60 * 60);
 
-      if (signedError || !signed?.signedUrl) return null;
+    if (signedError || !signed?.signedUrl) continue;
 
-      return {
-        id: asset.id,
-        role: relation.role,
-        url: signed.signedUrl,
-        alt: asset.original_filename,
-        metadata: {
-          relationId: relation.id,
-          sortOrder: relation.sort_order,
-          usageConfig: relation.usage_config,
-          mimeType: asset.mime_type,
-          width: asset.width,
-          height: asset.height,
-        },
-      } satisfies PublicationAsset;
-    }),
-  );
+    result.push({
+      id: asset.id,
+      role: relation.role,
+      url: signed.signedUrl,
+      alt: asset.original_filename,
+      metadata: {
+        relationId: relation.id,
+        sortOrder: relation.sort_order,
+        usageConfig: relation.usage_config,
+        mimeType: asset.mime_type,
+        width: asset.width,
+        height: asset.height,
+      },
+    });
+  }
 
-  return result.filter((asset): asset is PublicationAsset => asset !== null);
+  return result;
 }
