@@ -15,4 +15,5 @@ export const splitScreenshotDefinition: ArchetypeDefinition = {
     "professional-insight",
   ],
   variants: ["left-right"],
+  requiredAssetRoles: ["hero"],
 };
