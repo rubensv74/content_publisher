@@ -23,9 +23,14 @@ function renderLabel(render: PublishableRender) {
   return `${type}${pages} · ${created}`;
 }
 
-function successMessage(action: "publish-now" | "schedule" | "draft") {
+function successMessage(
+  action: "publish-now" | "schedule" | "draft",
+  reused = false,
+) {
   if (action === "draft") {
-    return "Draft guardado correctamente en Buffer. No se ha publicado en LinkedIn.";
+    return reused
+      ? "Ya existía un draft de esta publicación, render y canal en Buffer. No se ha creado un duplicado."
+      : "Draft guardado correctamente en Buffer. No se ha publicado en LinkedIn.";
   }
 
   if (action === "schedule") {
@@ -123,7 +128,7 @@ export function PublishingPanel({
 
     if (action === "draft" && lastSuccessfulAction === "draft") {
       setErrorMessage(
-        "Ya has creado un draft en esta sesión. Revísalo en Historial antes de generar otro.",
+        "Ya has comprobado el draft en esta sesión. Revísalo en Historial antes de generar otro.",
       );
       return;
     }
@@ -144,9 +149,9 @@ export function PublishingPanel({
 
     startTransition(async () => {
       try {
-        await publishPublication(formData);
+        const result = await publishPublication(formData);
         setLastSuccessfulAction(action);
-        setResultMessage(successMessage(action));
+        setResultMessage(successMessage(action, result.reused));
         router.refresh();
       } catch (error) {
         setErrorMessage(
@@ -284,7 +289,7 @@ export function PublishingPanel({
             {isPending && activeAction === "draft"
               ? "Guardando draft…"
               : lastSuccessfulAction === "draft"
-                ? "Draft guardado ✓"
+                ? "Draft comprobado ✓"
                 : "Guardar draft en Buffer"}
           </button>
         </div>
