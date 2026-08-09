@@ -56,12 +56,20 @@ export async function persistFinalRender(
     variantKey: publication.variantKey,
   };
 
+  const assetSnapshot = publication.assets.map((asset) => ({
+    id: asset.id,
+    role: asset.role,
+    alt: asset.alt ?? null,
+    metadata: asset.metadata ?? {},
+  }));
+
   const renderContext = {
     rendererVersion: RENDERER_VERSION,
     exportedAt,
     publication: publicationSnapshot,
     design: designSnapshot,
     identity: publication.identity,
+    assets: assetSnapshot,
     output: {
       renderType: payload.renderType,
       width: payload.width,
@@ -99,6 +107,7 @@ export async function persistFinalRender(
       publication: publicationSnapshot,
       design: designSnapshot,
       identity: publication.identity,
+      assets: assetSnapshot,
       output: {
         renderType: "png",
         role: "document-thumbnail",
