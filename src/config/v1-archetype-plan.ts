@@ -39,6 +39,7 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "product",
     use: "Explicar una interfaz sin sacrificar contexto.",
     variants: ["left/right", "top/bottom"],
+    implementationKey: "split-screenshot",
   },
   {
     code: "PR-03",
