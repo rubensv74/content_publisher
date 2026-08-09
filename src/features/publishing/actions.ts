@@ -217,6 +217,16 @@ export async function publishPublication(formData: FormData) {
         .eq("id", publicationId)
         .eq("user_id", userId);
     }
+
+    revalidatePath("/publications");
+    revalidatePath(`/publications/${publicationId}/studio`);
+
+    return {
+      ok: true as const,
+      action,
+      externalId: post.id,
+      providerStatus: post.status ?? null,
+    };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Buffer rechazó la publicación.";
@@ -233,7 +243,4 @@ export async function publishPublication(formData: FormData) {
 
     throw error;
   }
-
-  revalidatePath("/publications");
-  revalidatePath(`/publications/${publicationId}/studio`);
 }
