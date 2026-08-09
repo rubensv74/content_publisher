@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getArchetypeDefinition } from "@/publication-renderer/archetypes/registry";
 import type { RenderablePublication } from "@/publication-renderer/contracts";
 import type { FinalRenderPayload } from "@/publication-renderer/export/final-render";
+import { ArchitectureFlowPreview } from "@/publication-renderer/preview/architecture-flow-preview";
 import { BoldStatementPreview } from "@/publication-renderer/preview/bold-statement-preview";
 import { BuildNotePreview } from "@/publication-renderer/preview/build-note-preview";
 import { HeroScreenshotPreview } from "@/publication-renderer/preview/hero-screenshot-preview";
@@ -57,6 +58,15 @@ export function PersistedPublicationPreview({
   if (publication.archetypeKey === "split-screenshot") {
     return (
       <SplitScreenshotPreview
+        publication={publication}
+        persistFinalRender={persistenceHandler}
+      />
+    );
+  }
+
+  if (publication.archetypeKey === "architecture-flow") {
+    return (
+      <ArchitectureFlowPreview
         publication={publication}
         persistFinalRender={persistenceHandler}
       />
