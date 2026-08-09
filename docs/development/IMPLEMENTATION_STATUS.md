@@ -1,10 +1,22 @@
 # Estado de implementación
 
-Fecha de actualización: 2026-08-08
+Fecha de actualización: 2026-08-09
+
+## Resumen ejecutivo
+
+Content Publisher ya dispone de un recorrido V1 ejecutable en producción:
+
+```text
+IDEA → STORY → FORMAT → DESIGN → PREVIEW → RENDER READY → BUFFER DRAFT
+```
+
+La integración real con Supabase, Vercel, Buffer y un canal personal de LinkedIn ha sido validada.
+
+Todavía **no se ha realizado una publicación pública real en LinkedIn** durante la validación. La prueba de extremo a extremo se ha detenido deliberadamente en un draft de Buffer.
 
 ## Arquitectura
 
-Los gates aprobados hasta ahora son:
+Gates aprobados:
 
 - AG-001 — Tailwind CSS + shadcn/ui para la aplicación; renderer propio para publicaciones.
 - AG-002 — Supabase Auth con email + contraseña, sin registro público.
@@ -14,89 +26,84 @@ Los gates aprobados hasta ahora son:
 - AG-006 — assets fuente privados + bucket público separado para renders finales.
 - AG-007 — API key personal de Buffer exclusivamente server-side.
 
-AG-007 está registrado definitivamente como `ADR-010_BUFFER_PERSONAL_API_KEY_SERVER_SIDE.md`.
+Decisiones registradas hasta ADR-010.
 
 **No existe un gate de arquitectura abierto en este momento.**
 
-## Cimentación implementada
+## Infraestructura operativa
 
-La base ejecutable del producto contiene:
+### Supabase
 
-- Next.js + React + TypeScript;
-- Tailwind CSS;
-- estructura por responsabilidades bajo `src/`;
-- clientes Supabase para navegador y servidor;
-- renovación de sesión mediante `proxy.ts`;
-- login privado con email + contraseña;
-- shell principal de navegación;
-- frontera independiente del renderer de publicaciones;
-- adaptador de exportación PNG/PDF;
-- modelo PostgreSQL V1 con RLS;
-- Storage privado para fuentes;
-- Storage público separado para renders finales;
-- frontera de Publishing con adaptador Buffer server-side;
-- historial editorial derivado de datos reales;
-- workflow de calidad en GitHub para `push`, `pull_request` y ejecución manual.
-
-## Supabase dedicado
-
-Existe un proyecto Supabase independiente para Content Publisher:
+Proyecto dedicado:
 
 - nombre: `Content Publisher`;
 - región: `eu-west-1`;
-- proyecto activo y sano.
+- estado: activo y sano.
 
-Migraciones aplicadas:
+Migraciones principales:
 
 1. `initial_schema` — tablas, relaciones, restricciones, triggers, RLS y Storage privado;
-2. `add_fk_indexes` — índices de cobertura recomendados para claves foráneas;
-3. `public_publishable_renders` — bucket público de renders finales y políticas de escritura/borrado por usuario.
+2. `add_fk_indexes` — índices de cobertura para claves foráneas;
+3. `public_publishable_renders` — bucket público separado para renders finales.
 
-La validación posterior confirma:
+Buckets:
 
-- `content-publisher` sigue siendo privado;
-- `content-publisher-published` es público para lectura;
-- el bucket público admite únicamente `image/png` y `application/pdf`;
-- el límite configurado es 100 MB;
-- existen políticas `INSERT`, `UPDATE` y `DELETE` restringidas al usuario autenticado y a su prefijo UUID.
+- `content-publisher`: privado, usado para recursos fuente;
+- `content-publisher-published`: público para lectura de renders finales que deben consumir servicios externos como Buffer.
 
-Los avisos de rendimiento actuales son índices todavía sin uso, algo esperado en una base con poco tráfico. El advisor de seguridad no detecta problemas de RLS/Storage; sí informa que la protección contra contraseñas filtradas de Supabase Auth está desactivada. Esta mejora de configuración queda pendiente y su referencia oficial es:
+El modelo mantiene RLS por `user_id` y rutas de Storage con prefijo UUID del usuario.
 
-https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+### Vercel
 
-## Autenticación validada
+Existe un proyecto de producción conectado continuamente con:
+
+```text
+rubensv74/content_publisher → Vercel → content-publisher-nu.vercel.app
+```
+
+Variables de producción configuradas:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+BUFFER_API_KEY
+```
+
+`BUFFER_API_KEY` se mantiene como secreto server-side y no utiliza el prefijo `NEXT_PUBLIC_`.
+
+GitHub → Vercel está operativo y cada cambio de `main` genera un nuevo deployment de Production.
+
+## Autenticación
 
 Existe una única cuenta personal autorizada en Supabase Auth.
 
-La comprobación del backend confirma:
+Validado:
 
-- la cuenta está confirmada;
-- las políticas RLS permiten trabajar únicamente con datos propios;
-- se han ejecutado pruebas transaccionales autenticadas sin dejar registros de prueba.
+- login desde producción;
+- sesión persistente;
+- acceso privado a workspace;
+- RLS sobre datos propios;
+- cierre de sesión.
 
-La contraseña del usuario no se almacena ni se comparte con el repositorio.
+No existe signup público.
 
 ## Ideas
 
-La bandeja de Ideas dispone de persistencia real y operaciones básicas:
+La bandeja de Ideas permite:
 
 - crear;
 - listar;
 - editar;
 - archivar;
 - eliminar;
-- distinguir una idea convertida;
-- iniciar la conversión de una Idea en Publication.
+- distinguir ideas convertidas;
+- convertir una Idea en Publication.
 
 Las operaciones se ejecutan mediante Server Actions y respetan sesión y RLS.
 
 ## Content Studio
 
-El flujo funcional implementado alcanza técnicamente:
-
-`IDEA → STORY → FORMAT → DESIGN → PREVIEW → RENDER READY → PUBLISH`
-
-Desde una Idea se puede crear una publicación y definir:
+Desde una publicación se puede persistir:
 
 - título de trabajo;
 - tema;
@@ -106,29 +113,26 @@ Desde una Idea se puede crear una publicación y definir:
 - decisión o solución;
 - aprendizaje;
 - idea transferible;
-- formato: imagen única o carrusel;
-- diseño compatible;
+- formato;
+- diseño;
 - identidad visual;
 - caption de LinkedIn.
 
-Content Studio permite guardar la historia estructurada, seleccionar el diseño, generar un render final trazable y, cuando Buffer esté configurado, seleccionar canal/render y ejecutar:
+El botón de guardado dispone ya de feedback visible de progreso y confirmación.
 
-- publicar ahora;
-- programar para una fecha concreta;
-- guardar como draft en Buffer.
-
-La creación real de posts no se considera validada todavía porque falta configurar `BUFFER_API_KEY` en un entorno de ejecución.
+La selección de diseño también ofrece confirmación explícita.
 
 ## Renderer visual
 
-El renderer permanece aislado de la UI de aplicación conforme a ADR-004.
+El renderer sigue aislado de la UI de aplicación conforme a ADR-004.
 
 ### Build Note v1
 
 - familia `editorial`;
 - formato `single-image`;
 - variante `editorial-light`;
-- canvas 1080 × 1350, relación 4:5;
+- canvas 1080 × 1350;
+- relación 4:5;
 - exportación PNG mediante `html-to-image` desde el mismo árbol React del preview.
 
 ### Step by Step v1
@@ -136,115 +140,76 @@ El renderer permanece aislado de la UI de aplicación conforme a ADR-004.
 - familia `carousel`;
 - formato `carousel`;
 - variante `editorial-light`;
-- páginas 1080 × 1350, relación 4:5;
-- exportación PDF mediante `pdf-lib` ensamblando las páginas del mismo preview React.
+- páginas 1080 × 1350;
+- relación 4:5;
+- exportación PDF mediante `pdf-lib`.
+
+Los carruseles generan también una miniatura PNG de la primera página porque Buffer exige `thumbnailUrl` para documentos.
 
 ## Identidad
 
-La pantalla `/settings` permite persistir una identidad en `identity_profiles`.
+`/settings` permite persistir una identidad central en `identity_profiles`.
 
-Los previews cargan la identidad central y aplican:
+Los previews aplican:
 
-- firma;
+- nombre visible;
+- firma corta;
+- dirección visual;
 - paleta;
-- tipografía;
-- dirección visual seleccionada.
+- tipografía.
 
-La identidad ya no está acoplada a cada arquetipo.
+La identidad se comparte entre arquetipos y no está duplicada dentro de cada diseño.
 
-## Persistencia de Design
+## Persistencia de renders
 
-La selección de diseño se guarda en `publications` mediante:
-
-- `archetype_key`;
-- `archetype_version`;
-- `variant_key`.
-
-La Server Action valida existencia, versión, variante, formato y tipo de historia contra el registro activo del renderer.
-
-## Persistencia de renders finales
-
-Una vez guardado el diseño, Content Studio habilita **Crear render final**.
-
-El flujo implementado es:
+Flujo operativo:
 
 ```text
 Preview React
   ↓
 PNG / PDF
   ↓
-crear renders.status = pending
+renders.status = pending
   ↓
-subir a content-publisher-published
+content-publisher-published
   ↓
-marcar renders.status = ready
+renders.status = ready
   ↓
-URL pública estable
+URL HTTPS pública estable
 ```
 
-La ruta es inmutable:
+Ruta inmutable:
 
 ```text
 {user_id}/{publication_id}/{render_id}.png
 {user_id}/{publication_id}/{render_id}.pdf
 ```
 
-`render_context` guarda la instantánea de contenido, versión de esquema, diseño, identidad y datos técnicos del exportador.
+`render_context` conserva la instantánea necesaria para trazabilidad.
 
-Si la subida falla, el render queda `failed`. Si falla el cambio final a `ready`, se intenta retirar el archivo subido y marcar el registro como fallido.
+La demo real generó correctamente un render PNG `ready`, accesible desde Buffer.
 
-El renderer no importa Supabase: la persistencia se conecta desde `features/renders`, manteniendo la frontera arquitectónica.
+## Integración Buffer → LinkedIn
 
-### Miniatura de documentos para Buffer
-
-La documentación actual de Buffer define `DocumentAssetInput` con tres campos obligatorios: URL del documento, URL de miniatura y título.
-
-Por ese motivo, al crear un render final de carrusel se generan dos recursos relacionados pero independientes:
-
-1. el PDF principal;
-2. un PNG de la primera página utilizado como miniatura del documento.
-
-Cada archivo conserva su propia fila `renders` y su propia ruta inmutable. El PDF referencia el `thumbnailRenderId` en `render_context`, de forma que no se rompe la regla de un archivo por render.
-
-Los renders PDF creados antes de esta mejora se muestran como no aptos para Buffer y deben regenerarse.
-
-## Integración Buffer
-
-AG-007 aprobó una API key personal almacenada únicamente como variable de entorno server-side:
+La API key personal de Buffer está configurada en Vercel como:
 
 ```text
 BUFFER_API_KEY
 ```
 
-`.env.example` declara el nombre, pero nunca contiene un valor.
+La aplicación ha validado en producción:
 
-La integración implementada incluye:
+- autenticación con Buffer;
+- descubrimiento de cuenta;
+- descubrimiento de organización;
+- descubrimiento de canal LinkedIn;
+- perfil LinkedIn disponible;
+- lectura del render público;
+- creación real de drafts mediante la API GraphQL de Buffer.
 
-### Cliente GraphQL server-side
+El canal detectado durante la prueba corresponde al perfil personal conectado en Buffer.
 
-Ruta: `src/lib/publishing/buffer/`.
-
-Responsabilidades:
-
-- endpoint `https://api.buffer.com`;
-- autenticación Bearer con `BUFFER_API_KEY`;
-- manejo explícito de clave ausente o revocada;
-- normalización de errores HTTP/GraphQL;
-- ninguna exposición de la credencial al cliente.
-
-### Descubrimiento de cuenta y canales
-
-La aplicación consulta:
-
-1. cuenta y organizaciones;
-2. canales de cada organización;
-3. filtra únicamente canales `linkedin`.
-
-Settings muestra el estado de conexión, cuenta, organizaciones y canales disponibles. También distingue canales desconectados o bloqueados.
-
-### Creación de posts
-
-El adaptador utiliza `createPost` conforme al API GraphQL de Buffer:
+El adaptador utiliza:
 
 - `shareNow` para publicar ahora;
 - `customScheduled` + `dueAt` para programar;
@@ -256,16 +221,57 @@ Medios:
 - imagen: `image.url`;
 - documento: `document.url`, `document.thumbnailUrl`, `document.title`.
 
-Antes de enviar un trabajo, Content Publisher comprueba que el render y, cuando aplica, la miniatura sean URLs HTTPS públicas accesibles.
+Fuentes oficiales de referencia:
 
-Fuentes oficiales utilizadas para verificar el contrato actual:
-
-- https://developers.buffer.com/guides/authentication.html
-- https://developers.buffer.com/examples/get-organizations.html
-- https://developers.buffer.com/examples/get-channels.html
-- https://developers.buffer.com/guides/posts-and-scheduling.html
+- https://developers.buffer.com/guides/getting-started.html
+- https://developers.buffer.com/examples/create-draft-post.html
+- https://developers.buffer.com/examples/create-scheduled-post.html
 - https://developers.buffer.com/types/CreatePostInput.html
 - https://developers.buffer.com/types/DocumentAssetInput.html
+- https://developers.buffer.com/types/DeletePostInput.html
+
+## Primera validación end-to-end
+
+Caso utilizado:
+
+**“De una idea técnica a una publicación sin pasar por Canva”**
+
+Validado:
+
+```text
+Idea ✅
+Story ✅
+Caption ✅
+Design ✅
+Preview ✅
+Render PNG final ✅
+Buffer conectado ✅
+LinkedIn detectado ✅
+Draft real en Buffer ✅
+Publicación pública en LinkedIn ⏳
+```
+
+La base de datos confirmó que Buffer devolvió identificadores externos con `bufferStatus = draft`.
+
+## Incidencia descubierta durante la demo
+
+El primer botón **Guardar draft en Buffer** sí funcionaba, pero no mostraba progreso ni confirmación visual.
+
+Como consecuencia se pulsó repetidamente y Buffer recibió varios drafts válidos en pocos segundos.
+
+La incidencia produjo información útil para endurecer la UX antes de una publicación real.
+
+Correcciones implementadas:
+
+1. indicador `Guardando draft…`;
+2. bloqueo de controles mientras la operación está en curso;
+3. confirmación verde al finalizar;
+4. el botón queda como `Draft guardado ✓` durante la sesión para impedir una repetición accidental inmediata;
+5. Historial detecta cuando existen varios drafts activos;
+6. cada draft puede eliminarse de Buffer desde Historial mediante una acción explícita y confirmada;
+7. la eliminación usa la mutación oficial `deletePost` de Buffer y marca el `publishing_job` local como `cancelled`.
+
+No se elimina automáticamente ningún draft externo: la eliminación siempre requiere una acción explícita del usuario.
 
 ## Publishing Jobs
 
@@ -276,75 +282,74 @@ Si Buffer acepta la operación se guardan:
 - `render_id` exacto;
 - canal y organización utilizados;
 - `external_id` devuelto por Buffer;
-- `external_url` cuando esté disponible;
+- `external_url` cuando existe;
 - estado devuelto por Buffer;
 - modo de publicación;
 - fecha programada;
-- URLs del render y miniatura utilizadas.
+- URLs de render/miniatura usadas.
 
 Nunca se persiste la API key.
 
-Si la llamada falla, el job queda en `failed` con un mensaje de error saneado.
+Si falla la llamada, el job queda `failed` con mensaje de error.
 
-Para `publish-now`, una Publication solo se marca como `published` inmediatamente si Buffer ya responde con estado `sent`; estados asíncronos como `sending` se conservan en el payload del job y no se interpretan falsamente como publicación completada.
+Los drafts eliminados desde Historial quedan `cancelled`, preservando la trazabilidad sin fingir que nunca existieron.
 
 ## Historial editorial
 
-`/history` ya es funcional.
-
-La vista se deriva de:
+`/history` se deriva de:
 
 - `publications`;
 - `renders`;
 - `publishing_jobs`.
 
-No se ha creado una tabla duplicada de historial.
+No existe una tabla duplicada de historial.
 
-La vista muestra publicación, tema, render, diseño, acción, estado, fecha de creación/programación, Buffer ID, enlace externo y error cuando exista.
+La vista muestra:
+
+- publicación;
+- tema;
+- render;
+- diseño;
+- acción;
+- estado comprensible para usuario;
+- fecha;
+- programación;
+- Buffer ID;
+- enlace externo cuando existe;
+- errores;
+- eliminación explícita de drafts de Buffer.
 
 ## Calidad técnica
 
-El workflow `Quality` valida:
+El workflow `Quality` valida en cada cambio relevante:
 
 - instalación de dependencias;
 - ESLint;
 - TypeScript;
 - build de Next.js.
 
-Durante la implementación de Buffer CI detectó un problema de estrechamiento de tipos en la respuesta polimórfica de `createPost`. Se corrigió y la mutación se alineó además con el fragmento oficial `MutationError` utilizado en la documentación de Buffer.
+La última mejora de protección contra drafts duplicados ha superado completamente el workflow de calidad y se encuentra desplegada en Vercel Production.
 
-El estado funcional completo anterior a esta actualización documental ya pasó correctamente lint, TypeScript y build. El último commit de integración se valida igualmente mediante el workflow automático de `main`.
+## Estado operativo actual
 
-## Vercel
+No existe ya un bloqueo de infraestructura para V1.
 
-La integración de despliegue ha generado previews, pero todavía no existe una validación estable del recorrido navegador → login → Content Studio → Buffer.
+Pendientes inmediatos de validación:
 
-La conexión Git continua entre GitHub y un proyecto Vercel estable sigue pendiente como tarea operativa.
+1. abrir `/history` en producción;
+2. conservar un solo draft de la demo y eliminar los duplicados mediante la nueva acción;
+3. abrir Buffer y comprobar visualmente que el draft conservado contiene caption + PNG correctos;
+4. comprobar que Historial refleja los drafts eliminados como `cancelled`;
+5. después probar programación o publicación real únicamente mediante acción explícita del usuario.
 
-El secreto `BUFFER_API_KEY` no puede configurarse mediante las herramientas actuales del conector utilizado para el desarrollo. Debe añadirse manualmente al entorno de Vercel o a `.env.local` para una ejecución local.
+## Próximo gate de arquitectura
 
-## Bloqueo operativo actual
-
-La arquitectura y la implementación de `RENDER READY → PUBLISH` están preparadas. Falta un dato operativo externo: una API key real de Buffer configurada en el servidor.
-
-La clave debe crearse en Buffer desde **Settings → API** y añadirse como:
+Después de validar el draft y antes de considerar cerrada la automatización de Publishing, habrá que decidir cómo reconciliar estados asíncronos de Buffer con el estado local, por ejemplo:
 
 ```text
-BUFFER_API_KEY=<valor secreto>
+scheduled → sending → sent
 ```
 
-No debe pegarse en código, PostgreSQL ni en un archivo versionado.
+Las alternativas previsibles son polling, webhook u otro mecanismo persistente.
 
-Una vez configurada, el siguiente procedimiento será:
-
-1. validar la conexión mediante una consulta de solo lectura;
-2. descubrir las organizaciones y canales LinkedIn reales;
-3. comprobar que el canal objetivo está operativo;
-4. generar un render final real desde navegador;
-5. probar primero una operación no pública si se desea validar el ciclo completo con mínimo riesgo;
-6. realizar una publicación real únicamente con una acción explícita del usuario;
-7. revisar `publishing_jobs` e Historial.
-
-## Próximos temas posteriores
-
-Después de la primera integración real con Buffer será necesario decidir cómo reconciliar estados asíncronos posteriores a `createPost` —por ejemplo `sending → sent` o `scheduled → sent`— si se quiere actualizar automáticamente el estado local sin intervención manual. Si la solución exige escoger entre polling, webhooks u otra estrategia persistente, se abrirá un nuevo gate de arquitectura antes de implementarla.
+Esa decisión abrirá un nuevo gate de arquitectura y no se implementará sin aprobación previa.
