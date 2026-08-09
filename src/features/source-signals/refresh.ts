@@ -6,6 +6,7 @@ import { editorialHistorySourceAdapter } from "./adapters/editorial-history";
 import { githubSourceAdapter } from "./adapters/github";
 import { knowledgeBaseSourceAdapter } from "./adapters/knowledge-base";
 import { manualIdeasSourceAdapter } from "./adapters/manual-ideas";
+import { technologyRssSourceAdapter } from "./adapters/technology-rss";
 import { upsertSourceSignals } from "./data";
 import type {
   SourceSignalAdapter,
@@ -18,10 +19,12 @@ const localAdapters: SourceSignalAdapter[] = [
   editorialHistorySourceAdapter,
 ];
 
-const externalAdapters: SourceSignalAdapter[] = [
+const githubAdapters: SourceSignalAdapter[] = [
   githubSourceAdapter,
   knowledgeBaseSourceAdapter,
 ];
+
+const technologyAdapters: SourceSignalAdapter[] = [technologyRssSourceAdapter];
 
 function deduplicate(candidates: SourceSignalCandidate[]) {
   return [...new Map(candidates.map((candidate) => [candidate.fingerprint, candidate])).values()];
@@ -62,5 +65,9 @@ export async function refreshLocalSourceSignals() {
 }
 
 export async function refreshExternalSourceSignals() {
-  return refreshAdapters(externalAdapters);
+  return refreshAdapters(githubAdapters);
+}
+
+export async function refreshTechnologySourceSignals() {
+  return refreshAdapters(technologyAdapters);
 }
