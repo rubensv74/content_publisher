@@ -1,21 +1,19 @@
 # Catálogo de arquetipos
 
-Este documento es el índice funcional de los diseños que Content Publisher podrá implementar. No describe todavía el estilo visual definitivo; define qué problema editorial resuelve cada composición.
+Este documento es el índice funcional de las composiciones visuales de Content Publisher.
 
-## Convención
+Estados posibles:
 
-Cada arquetipo deberá documentar:
+- `research` — idea todavía exploratoria;
+- `candidate` — candidata para una versión futura;
+- `implemented` — existe una implementación base en el runtime;
+- `deprecated` — retirada.
 
-- código;
-- familia;
-- objetivo;
-- contenido obligatorio;
-- contenido opcional;
-- formatos compatibles;
-- variantes;
-- limitaciones;
-- referencias de investigación relacionadas;
-- estado: `research`, `candidate`, `approved`, `implemented`, `deprecated`.
+## Estado V1
+
+Los 12 arquetipos seleccionados para V1 disponen ya de una implementación base. Esto no significa que todas sus variantes previstas estén terminadas: V1 prioriza una variante funcional por arquetipo y deja el refinamiento visual para iteraciones posteriores.
+
+Build Note existe además como arquetipo editorial operativo fuera de los 12 seleccionados originalmente.
 
 ---
 
@@ -27,30 +25,36 @@ Cada arquetipo deberá documentar:
 
 Contenido principal:
 
-- categoría o serie;
 - titular;
-- apoyo breve opcional;
+- apoyo breve;
+- insight/aprendizaje;
 - firma.
 
-Variantes previstas:
-
-- light;
-- dark;
-- accent block.
-
-Estado: `research`.
+Implementación runtime: `bold-statement`.  
+Variante base: `light`.  
+Estado: `implemented`.
 
 ### ED-02 — Minimal Editorial
 
 **Objetivo:** reflexión o aprendizaje con mayor espacio en blanco y jerarquía tipográfica.
 
+No forma parte de la selección V1 de 12 arquetipos.  
 Estado: `research`.
 
 ### ED-03 — Metric Hero
 
 **Objetivo:** utilizar una cifra o dato como puerta de entrada a la historia.
 
-Estado: `research`.
+Inputs especializados:
+
+- valor principal;
+- etiqueta;
+- delta opcional;
+- contexto opcional.
+
+Implementación runtime: `metric-hero`.  
+Variante base: `single-metric`.  
+Estado: `implemented`.
 
 ---
 
@@ -60,25 +64,49 @@ Estado: `research`.
 
 **Objetivo:** hacer que la pantalla o producto sea el protagonista.
 
-Estado: `research`.
+Requiere asset `hero`.
+
+Implementación runtime: `hero-screenshot`.  
+Variante base: `framed`.  
+Estado: `implemented`.
 
 ### PR-02 — Split Screenshot
 
 **Objetivo:** combinar captura y explicación en zonas claramente separadas.
 
-Estado: `research`.
+Requiere asset `hero`.
+
+Implementación runtime: `split-screenshot`.  
+Variante base: `left-right`.  
+Estado: `implemented`.
 
 ### PR-03 — Annotated Screenshot
 
 **Objetivo:** explicar varios puntos de una interfaz mediante marcadores y anotaciones controladas.
 
-Estado: `research`.
+Requiere:
+
+- asset `hero`;
+- una o más anotaciones con etiqueta y coordenadas porcentuales.
+
+Implementación runtime: `annotated-screenshot`.  
+Variante base: `numbered`.  
+Estado: `implemented`.
 
 ### PR-04 — Before / After
 
 **Objetivo:** mostrar de forma inmediata la evolución de una interfaz, arquitectura o resultado.
 
-Estado: `research`.
+Requiere:
+
+- asset `before`;
+- asset `after`;
+- etiquetas de ambos estados;
+- resumen opcional del cambio.
+
+Implementación runtime: `before-after`.  
+Variante base: `split`.  
+Estado: `implemented`.
 
 ---
 
@@ -86,21 +114,53 @@ Estado: `research`.
 
 ### TE-01 — Architecture Flow
 
-**Objetivo:** explicar componentes y relaciones de una solución.
+**Objetivo:** explicar componentes, etapas o relaciones de una solución.
 
-Estado: `research`.
+Implementación runtime: `architecture-flow`.  
+Variante base implementada: flujo estructurado.  
+Estado: `implemented`.
 
 ### TE-02 — Code Focus
 
 **Objetivo:** mostrar una pequeña pieza de código con contexto y explicación, evitando capturas ilegibles del IDE.
 
-Estado: `research`.
+Inputs especializados:
+
+- lenguaje;
+- snippet;
+- líneas destacadas opcionales;
+- explicación breve.
+
+Implementación runtime: `code-focus`.  
+Variante base: `code-first`.  
+Estado: `implemented`.
 
 ### TE-03 — Process Steps
 
 **Objetivo:** explicar una secuencia de decisiones o pasos técnicos.
 
-Estado: `research`.
+Implementación runtime: `process-steps`.  
+Variante base implementada: secuencia estructurada.  
+Estado: `implemented`.
+
+---
+
+## Data
+
+### DA-01 — Data Story
+
+**Objetivo:** convertir métricas en una historia visual orientada a significado y decisión.
+
+Inputs especializados:
+
+- título;
+- unidad opcional;
+- serie de 2–5 categorías y valores;
+- insight/takeaway.
+
+Implementación runtime: `data-story`.  
+Variante base: `bars`.  
+Estado: `implemented`.
 
 ---
 
@@ -114,37 +174,42 @@ Estructura típica:
 
 1. portada;
 2. contexto;
-3. pasos;
-4. resultado;
-5. aprendizaje o cierre.
+3. exploración;
+4. decisión;
+5. aprendizaje;
+6. cierre.
 
-Estado: `research`.
+Implementación runtime: `step-by-step`.  
+Salida: PDF + miniatura PNG.  
+Estado: `implemented`.
 
 ### CA-02 — Case Study
 
-**Objetivo:** contar problema, contexto, decisiones, solución y resultado.
+**Objetivo:** contar un proyecto completo desde el contexto hasta el aprendizaje.
 
-Estado: `research`.
+Implementación runtime: `case-study`.  
+Salida: PDF + miniatura PNG.  
+Estado: `implemented`.
 
 ### CA-03 — Checklist / Lessons
 
 **Objetivo:** presentar una lista de aprendizajes o recomendaciones en varias páginas.
 
+No forma parte de la selección V1 de 12 arquetipos.  
 Estado: `research`.
 
 ---
 
-## Criterio para pasar de `research` a `candidate`
+## Arquetipo adicional — Build Note
 
-Un arquetipo debe demostrar que:
+**Objetivo:** explicar una construcción, decisión y aprendizaje de forma editorial compacta.
 
-- aporta una composición distinta;
-- responde a un caso real de publicación;
-- puede reutilizarse con varios temas;
-- funciona bien en móvil;
-- puede convivir con la identidad global;
-- es razonable de implementar de forma paramétrica.
+Implementación runtime: `build-note`.  
+Formato: imagen única 1080 × 1350.  
+Estado: `implemented`.
 
-## Nota
+Fue el diseño utilizado en la primera validación end-to-end de Content Publisher.
 
-La lista puede crecer durante la investigación. El objetivo de la V1 no es implementar todo el catálogo posible, sino seleccionar aproximadamente 12 arquetipos con cobertura editorial suficiente.
+## Criterio de evolución
+
+Que un arquetipo esté `implemented` significa que existe una composición base funcional, exportable y compatible con el flujo de publicación. Las variantes adicionales, ajustes tipográficos, densidades, paletas y refinamientos de composición seguirán iterándose con contenido real sin modificar la arquitectura del catálogo.
