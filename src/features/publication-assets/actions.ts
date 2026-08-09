@@ -17,6 +17,24 @@ async function getAuthenticatedUserId() {
   return { supabase, userId };
 }
 
+async function touchPublication(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  publicationId: string,
+  userId: string,
+) {
+  const { error } = await supabase
+    .from("publications")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", publicationId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(
+      `El recurso cambió, pero no se pudo invalidar el render anterior: ${error.message}`,
+    );
+  }
+}
+
 export async function setPublicationHeroAsset(formData: FormData) {
   const publicationId = formData.get("publicationId");
   const assetId = formData.get("assetId");
@@ -74,6 +92,7 @@ export async function setPublicationHeroAsset(formData: FormData) {
     throw new Error(`No se pudo asociar el recurso: ${insertError.message}`);
   }
 
+  await touchPublication(supabase, publicationId, userId);
   revalidatePath(`/publications/${publicationId}/studio`);
 }
 
@@ -96,5 +115,6 @@ export async function removePublicationHeroAsset(formData: FormData) {
     throw new Error(`No se pudo retirar el recurso: ${error.message}`);
   }
 
+  await touchPublication(supabase, publicationId, userId);
   revalidatePath(`/publications/${publicationId}/studio`);
 }
