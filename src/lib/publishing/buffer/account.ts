@@ -1,3 +1,5 @@
+import { connection } from "next/server";
+
 import {
   BufferApiError,
   bufferGraphQL,
@@ -82,6 +84,10 @@ type ChannelsResponse = {
 };
 
 export async function getBufferConnectionStatus(): Promise<BufferConnectionStatus> {
+  // Force request-time evaluation before reading the private server environment.
+  // This avoids a build/prerender evaluation freezing BUFFER_API_KEY as undefined.
+  await connection();
+
   if (!isBufferConfigured()) {
     return {
       configured: false,
