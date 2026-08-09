@@ -6,6 +6,7 @@ import {
   LayoutTemplate,
   Lightbulb,
   LogOut,
+  Search,
   Settings,
 } from "lucide-react";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import { signOut } from "@/features/auth/actions";
 const navigation = [
   { href: "/", label: "Inicio", icon: BookOpenText },
   { href: "/ideas", label: "Ideas", icon: Lightbulb },
+  { href: "/signals", label: "Señales", icon: Search },
   { href: "/publications", label: "Publicaciones", icon: FileText },
   { href: "/designs", label: "Diseños", icon: LayoutTemplate },
   { href: "/assets", label: "Recursos", icon: Image },

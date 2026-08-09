@@ -99,47 +99,47 @@ Los parámetros visuales especializados se almacenan en `publications.visual_con
 
 Decisión registrada en `ADR-011_SPECIALIZED_ARCHETYPE_VISUAL_CONFIG.md`.
 
-La propuesta y alternativas evaluadas se conservan en:
-
-`docs/architecture/proposals/AG-008_SPECIALIZED_ARCHETYPE_INPUT_MODEL.md`
-
 ### AG-009 — Reconciliación de estados de Buffer
 
 **Estado: Aprobado — Opción A.**
 
 La V1 reconcilia estados de Buffer bajo demanda cuando el usuario abre Historial y mediante una acción manual de actualización. No se introduce polling periódico ni Vercel Cron en V1.
 
-El estado remoto exacto se conserva en `provider_payload.bufferStatus` y el estado local de `publishing_jobs` mantiene el vocabulario actual mediante un mapeo explícito. La lectura de Buffer nunca publica, reprograma ni elimina contenido.
-
 Decisión registrada en `ADR-012_BUFFER_STATUS_RECONCILIATION_ON_DEMAND.md`.
-
-La propuesta y alternativas evaluadas se conservan en:
-
-`docs/architecture/proposals/AG-009_BUFFER_STATUS_RECONCILIATION.md`
 
 ### AG-010 — Estrategia de fuentes para Suggestion Engine
 
+**Estado: Aprobado — Opción C.**
+
+Las fuentes completas permanecen en sus sistemas originales. Content Publisher utiliza adaptadores server-side y conserva solo una memoria ligera en `source_signals` con referencias, fingerprint, resumen y metadatos mínimos. No se replican repositorios ni documentos completos.
+
+Decisión registrada en `ADR-013_SUGGESTION_SOURCE_SIGNALS.md`.
+
+La primera implementación cubre señales locales de Ideas e Historial editorial. GitHub y Knowledge Base permanecen pendientes de resolver su autenticación runtime.
+
+### AG-011 — Autenticación runtime de GitHub para fuentes privadas
+
 **Estado: Abierto — pendiente de decisión.**
 
-La V1 está en Release Candidate y el siguiente bloque de producto previsto es Suggestion Engine. Antes de implementar el motor debe decidirse cómo leer y recordar señales procedentes de GitHub, la base de conocimiento, historial editorial e ideas existentes.
+Suggestion Engine necesita leer repositorios GitHub privados desde el servidor de Content Publisher. Debe decidirse qué mecanismo de autenticación utiliza la aplicación antes de introducir una credencial nueva.
 
-Alternativas:
+Alternativas documentadas:
 
-- **A** — lectura completa bajo demanda sin persistir señales;
-- **B** — replicar/indexar las fuentes en Supabase;
-- **C** — adaptadores server-side + registro ligero `source_signals`, sin replicar las fuentes completas **(recomendada)**.
+- **A** — fine-grained personal access token, read-only y limitado a repositorios seleccionados, almacenado server-side **(recomendada para la fase personal actual)**;
+- **B** — GitHub App con installation tokens;
+- **C** — solo API pública sin autenticación, insuficiente para repositorios privados.
 
-La propuesta completa está en:
+Propuesta completa:
 
-`docs/architecture/proposals/AG-010_SUGGESTION_ENGINE_SOURCE_STRATEGY.md`
+`docs/architecture/proposals/AG-011_GITHUB_RUNTIME_AUTHENTICATION.md`
 
-Este gate no decide todavía el proveedor de IA, embeddings, tendencias externas ni automatización programada.
+Este gate no decide todavía proveedor de IA, embeddings ni automatización programada.
 
 ## Estado global
 
-**Existe un gate de arquitectura abierto: AG-010.**
+**Existe un gate de arquitectura abierto: AG-011.**
 
-La V1 está técnicamente en Release Candidate y permanece pendiente de la validación manual de una programación/publicación real. El desarrollo autónomo del siguiente bloque se detiene ahora antes de introducir persistencia, sincronización o credenciales nuevas para Suggestion Engine.
+Las bases de `source_signals` y los adaptadores locales pueden quedar implementadas. El desarrollo autónomo se detiene antes de conectar repositorios privados o introducir secretos de GitHub en producción.
 
 ## Regla
 
