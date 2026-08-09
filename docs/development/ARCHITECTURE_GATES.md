@@ -19,8 +19,9 @@ Evitar decisiones técnicas importantes implícitas. El desarrollo puede continu
 - **AG-011, opción A** — fine-grained PAT GitHub read-only, repo-scoped, server-side y allowlist adicional. `ADR-014_GITHUB_FINE_GRAINED_PAT_SOURCE_READER.md`.
 - **AG-012, opción B** — OpenAI como primer motor detrás de `SuggestionModel`, Responses API, Structured Outputs y revisión humana. `ADR-015_SUGGESTION_ENGINE_OPENAI_ADAPTER.md`.
 - **AG-013, opción B** — `suggestions` persistentes + `suggestion_source_signals`, ciclo `new → accepted → converted` o `dismissed`, con conversión explícita a Idea. `ADR-016_SUGGESTION_PERSISTENCE_AND_LIFECYCLE.md`.
+- **AG-014, opción B** — `SourceContextResolver` bajo demanda, acotado, sanitizado y no persistente. `ADR-017_SUGGESTION_EPHEMERAL_CONTEXT_RESOLVER.md`.
 
-## Suggestion Engine implementado hasta AG-013
+## Suggestion Engine implementado hasta AG-014
 
 ```text
 Fuente original
@@ -30,6 +31,10 @@ Source Adapter
 source_signals
       ↓
 prefiltro determinista
+      ↓
+SourceContextResolver
+      ↓
+contexto efímero (cuando aplica)
       ↓
 SuggestionModel
       ↓
@@ -43,7 +48,11 @@ Idea
 Consecuencias ya implementadas:
 
 - hasta 20 señales por ejecución;
+- hasta 6 señales enriquecidas;
 - hasta 5 propuestas;
+- contexto GitHub/Knowledge Base limitado a metadatos de commit, rutas seguras y pequeños fragmentos Markdown;
+- exclusión de rutas sensibles y redacción defensiva de secretos;
+- tratamiento del contenido fuente como no confiable frente a prompt injection;
 - Structured Outputs;
 - persistencia y deduplicación por fingerprint;
 - relación relacional con señales fuente;
@@ -52,31 +61,29 @@ Consecuencias ya implementadas:
 - conversión humana explícita a Idea;
 - ninguna publicación automática.
 
-## AG-014 — Enriquecimiento de contexto para Suggestion Engine
+## AG-015 — Cadencia de generación de Suggestions
 
 **Estado: Abierto — pendiente de decisión.**
 
-La primera implementación entrega al modelo únicamente `source_signals` ligeras. Para GitHub, muchas señales contienen poco más que el mensaje de un commit, lo que puede ser insuficiente para detectar el aprendizaje técnico real detrás del cambio.
-
-Debe decidirse si el motor continúa solo con esa memoria ligera o recupera contexto adicional de la fuente antes de generar propuestas.
+La generación funciona actualmente bajo demanda. Debe decidirse si V1 mantiene ese comportamiento o incorpora ejecución automática.
 
 Alternativas:
 
-- **A** — usar exclusivamente las señales ligeras ya persistidas;
-- **B** — `SourceContextResolver` bajo demanda, acotado, sanitizado y no persistente **(recomendada)**;
-- **C** — índice persistente/RAG semántico con contenido fragmentado y embeddings.
+- **A** — generación exclusivamente bajo demanda **(recomendada para V1)**;
+- **B** — generación periódica programada;
+- **C** — generación event-driven mediante eventos/webhooks de las fuentes.
 
 Propuesta completa:
 
-`docs/architecture/proposals/AG-014_SUGGESTION_CONTEXT_ENRICHMENT.md`
+`docs/architecture/proposals/AG-015_SUGGESTION_GENERATION_CADENCE.md`
 
-La opción B mantendría GitHub/Knowledge Base como fuentes de verdad y recuperaría únicamente pequeños fragmentos o metadatos para las señales seleccionadas, con límites explícitos de privacidad y coste.
+La implementación de cron, workers, webhooks o generación automática queda detenida en este gate.
 
 ## Estado global
 
-**Existe un gate abierto: AG-014.**
+**Existe un gate abierto: AG-015.**
 
-La persistencia y UI de Suggestions pueden operar con señales ligeras. El desarrollo autónomo se detiene antes de introducir recuperación profunda de contenido de repositorios o un índice semántico persistente.
+La generación manual puede seguir utilizando toda la arquitectura aprobada hasta AG-014.
 
 ## Regla
 

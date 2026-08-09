@@ -11,6 +11,30 @@ export type GitHubSourceCommit = {
   };
 };
 
+export type GitHubSourceCommitFile = {
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  changes: number;
+};
+
+export type GitHubSourceCommitDetail = GitHubSourceCommit & {
+  stats?: {
+    total?: number;
+    additions?: number;
+    deletions?: number;
+  };
+  files?: GitHubSourceCommitFile[];
+};
+
+type GitHubSourceContent = {
+  type?: string;
+  encoding?: string;
+  content?: string;
+  size?: number;
+};
+
 export type GitHubSourceConnectionStatus = {
   configured: boolean;
   tokenPresent: boolean;
@@ -39,12 +63,14 @@ function normalizeRepository(value: string) {
 }
 
 function configuredRepositories() {
-  return [...new Set(
-    (process.env.GITHUB_SOURCE_REPOSITORIES ?? "")
-      .split(",")
-      .map(normalizeRepository)
-      .filter((value) => /^[^/\s]+\/[^/\s]+$/.test(value)),
-  )];
+  return [
+    ...new Set(
+      (process.env.GITHUB_SOURCE_REPOSITORIES ?? "")
+        .split(",")
+        .map(normalizeRepository)
+        .filter((value) => /^[^/\s]+\/[^/\s]+$/.test(value)),
+    ),
+  ];
 }
 
 export function getGitHubSourceConnectionStatus(): GitHubSourceConnectionStatus {
@@ -142,4 +168,57 @@ export async function listRecentRepositoryCommits(
 ): Promise<GitHubSourceCommit[]> {
   const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 30);
   return githubGet<GitHubSourceCommit[]>(repository, `/commits?per_page=${safeLimit}`);
+}
+
+export async function getRepositoryCommit(
+  repository: string,
+  sha: string,
+): Promise<GitHubSourceCommitDetail> {
+  const safeSha = sha.trim();
+  if (!/^[a-f0-9]{7,64}$/i.test(safeSha)) {
+    throw new GitHubSourceError(
+      "La referencia del commit no tiene un formato válido.",
+      "network",
+    );
+  }
+
+  return githubGet<GitHubSourceCommitDetail>(
+    repository,
+    `/commits/${encodeURIComponent(safeSha)}`,
+  );
+}
+
+function encodeRepositoryPath(path: string) {
+  return path
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+export async function getRepositoryMarkdownFile(args: {
+  repository: string;
+  path: string;
+  ref: string;
+  maxBytes?: number;
+}): Promise<string | null> {
+  const maxBytes = Math.min(Math.max(args.maxBytes ?? 12_000, 512), 40_000);
+  const payload = await githubGet<GitHubSourceContent>(
+    args.repository,
+    `/contents/${encodeRepositoryPath(args.path)}?ref=${encodeURIComponent(args.ref)}`,
+  );
+
+  if (
+    payload.type !== "file" ||
+    payload.encoding !== "base64" ||
+    typeof payload.content !== "string" ||
+    (typeof payload.size === "number" && payload.size > maxBytes)
+  ) {
+    return null;
+  }
+
+  const decoded = Buffer.from(payload.content.replace(/\s+/g, ""), "base64").toString(
+    "utf-8",
+  );
+  return decoded.slice(0, maxBytes);
 }

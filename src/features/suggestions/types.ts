@@ -17,6 +17,28 @@ export const SUGGESTION_STATUSES = [
 ] as const;
 export type SuggestionStatus = (typeof SUGGESTION_STATUSES)[number];
 
+export type SuggestionSignalContext = {
+  kind: "source-commit";
+  repository: string;
+  commitMessage: string;
+  changeStats: {
+    additions: number;
+    deletions: number;
+    filesChanged: number;
+  };
+  changedFiles: Array<{
+    path: string;
+    status: string;
+    additions: number;
+    deletions: number;
+  }>;
+  documentation: Array<{
+    path: string;
+    excerpt: string;
+  }>;
+  truncated: boolean;
+};
+
 export type SuggestionModelSignal = {
   id: string;
   sourceType: SourceSignalSourceType;
@@ -26,6 +48,7 @@ export type SuggestionModelSignal = {
   title: string;
   summary: string | null;
   occurredAt: string | null;
+  context?: SuggestionSignalContext;
 };
 
 export type SuggestionCandidate = {

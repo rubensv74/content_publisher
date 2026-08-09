@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getSourceSignals } from "@/features/source-signals/data";
 import { createClient } from "@/lib/supabase/server";
 
+import { enrichSuggestionSignals } from "./context";
 import {
   MAX_SIGNALS_PER_SUGGESTION_RUN,
   MAX_SUGGESTIONS_PER_RUN,
@@ -40,11 +41,15 @@ export async function generateAndPersistSuggestions() {
   }
 
   const allSignals = await getSourceSignals();
-  const selectedSignals = selectSignalsForSuggestionModel(allSignals);
+  const selectedSignals = selectSignalsForSuggestionModel(allSignals).slice(
+    0,
+    MAX_SIGNALS_PER_SUGGESTION_RUN,
+  );
 
   if (selectedSignals.length === 0) {
     return {
       observedSignals: 0,
+      enrichedSignals: 0,
       generated: 0,
       persisted: 0,
       provider: null,
@@ -52,14 +57,16 @@ export async function generateAndPersistSuggestions() {
     };
   }
 
+  const contextResolution = await enrichSuggestionSignals(selectedSignals);
   const result = await suggestionModel.generate({
-    signals: selectedSignals.slice(0, MAX_SIGNALS_PER_SUGGESTION_RUN),
+    signals: contextResolution.signals,
     maxSuggestions: MAX_SUGGESTIONS_PER_RUN,
   });
 
   if (result.suggestions.length === 0) {
     return {
       observedSignals: selectedSignals.length,
+      enrichedSignals: contextResolution.enrichedCount,
       generated: 0,
       persisted: 0,
       provider: result.provider,
@@ -150,6 +157,7 @@ export async function generateAndPersistSuggestions() {
 
   return {
     observedSignals: selectedSignals.length,
+    enrichedSignals: contextResolution.enrichedCount,
     generated: result.suggestions.length,
     persisted: suggestionIdByFingerprint.size,
     provider: result.provider,
