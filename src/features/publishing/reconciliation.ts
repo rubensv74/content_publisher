@@ -40,14 +40,6 @@ function localStatusForBufferStatus(
   return currentStatus;
 }
 
-function isRemoteNonTerminal(status: unknown) {
-  return (
-    status === "scheduled" ||
-    status === "sending" ||
-    status === "needs_approval"
-  );
-}
-
 export async function reconcilePublishingJobs(): Promise<ReconciliationSummary> {
   const supabase = await createClient();
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
@@ -80,21 +72,6 @@ export async function reconcilePublishingJobs(): Promise<ReconciliationSummary> 
 
   for (const job of jobs) {
     const currentPayload = asRecord(job.provider_payload);
-    const currentRemoteStatus = currentPayload.bufferStatus;
-
-    if (
-      job.status === "sent" &&
-      currentRemoteStatus !== "sending" &&
-      currentRemoteStatus !== "scheduled" &&
-      currentRemoteStatus !== "needs_approval"
-    ) {
-      // Legacy publish-now jobs were stored as `sent` even when Buffer had already
-      // confirmed a terminal status. Only reconcile them when the remote snapshot
-      // still indicates a non-terminal state.
-      if (!isRemoteNonTerminal(currentRemoteStatus)) {
-        continue;
-      }
-    }
 
     try {
       const remote = await getBufferPost(job.external_id);
