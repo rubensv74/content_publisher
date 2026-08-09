@@ -93,27 +93,21 @@ La V1 utiliza una API key personal de Buffer en `BUFFER_API_KEY`, disponible exc
 
 ### AG-008 — Datos especializados de arquetipos visuales
 
-**Estado: Abierto — pendiente de decisión.**
+**Estado: Aprobado — Opción B.**
 
-Los arquetipos básicos ya pueden construirse a partir de historia editorial y assets, pero los cinco diseños V1 pendientes necesitan datos especializados como métricas, snippets de código, anotaciones, pares before/after o series de datos.
+Los parámetros visuales especializados se almacenan en `publications.visual_config JSONB`, organizados por namespace de arquetipo. Se mantienen separadas la historia editorial (`structured_content`), los archivos fuente (`publication_assets`) y la configuración visual especializada (`visual_config`).
 
-La propuesta está documentada en:
+Decisión registrada en `ADR-011_SPECIALIZED_ARCHETYPE_VISUAL_CONFIG.md`.
+
+La propuesta y alternativas evaluadas se conservan en:
 
 `docs/architecture/proposals/AG-008_SPECIALIZED_ARCHETYPE_INPUT_MODEL.md`
 
-Alternativas:
-
-- **A** — mezclar estos datos dentro de `structured_content`;
-- **B** — añadir `visual_config JSONB` namespaced por arquetipo en `publications` **(recomendada)**;
-- **C** — crear una tabla relacional `publication_visual_configs` independiente.
-
-La implementación de ED-03, PR-03, PR-04, TE-02 y DA-01 queda detenida hasta aprobar una opción.
-
 ## Estado global
 
-**Existe un gate de arquitectura abierto: AG-008.**
+**No existe un gate de arquitectura abierto en este momento.**
 
-El desarrollo autónomo ha avanzado hasta la frontera en la que los siguientes arquetipos requieren decidir cómo persistir sus inputs visuales especializados. No se modificará ese modelo ni se implementarán esos cinco arquetipos hasta que exista aprobación.
+El desarrollo puede continuar de manera autónoma aplicando AG-008 para implementar los arquetipos especializados pendientes. Se abrirá un nuevo gate únicamente cuando aparezca una decisión estructural nueva.
 
 ## Regla
 
