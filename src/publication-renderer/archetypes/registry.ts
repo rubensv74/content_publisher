@@ -1,3 +1,4 @@
+import { architectureFlowDefinition } from "./architecture-flow/definition";
 import { boldStatementDefinition } from "./bold-statement/definition";
 import { buildNoteDefinition } from "./build-note/definition";
 import { heroScreenshotDefinition } from "./hero-screenshot/definition";
@@ -10,6 +11,7 @@ export const publicationArchetypes = [
   boldStatementDefinition,
   heroScreenshotDefinition,
   splitScreenshotDefinition,
+  architectureFlowDefinition,
   processStepsDefinition,
   stepByStepDefinition,
 ] as const;
