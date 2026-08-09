@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { SubmitButton } from "@/components/application/submit-button";
 import { storyTypes } from "@/config/story-types";
 import { getIdentitySnapshot } from "@/features/identity/data";
 import {
@@ -18,10 +19,12 @@ const workflow = ["Idea", "Story", "Format", "Design", "Preview", "Publish"];
 
 export default async function PublicationStudioPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ saved?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   const [publication, identity, publishableRenders, bufferStatus] =
     await Promise.all([
       getPublication(id),
@@ -99,6 +102,24 @@ export default async function PublicationStudioPage({
         </p>
         <h1 className="text-4xl font-semibold tracking-tight">{publication.title}</h1>
       </header>
+
+      {query.saved === "content" ? (
+        <div
+          className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+          role="status"
+        >
+          Cambios guardados correctamente. La historia y el texto de LinkedIn ya están persistidos.
+        </div>
+      ) : null}
+
+      {query.saved === "design" ? (
+        <div
+          className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+          role="status"
+        >
+          Diseño seleccionado correctamente. Ya puedes crear el render final.
+        </div>
+      ) : null}
 
       <div className="mb-7 overflow-x-auto rounded-2xl border border-[var(--border)] bg-white p-3">
         <ol className="flex min-w-max items-center gap-2">
@@ -227,13 +248,16 @@ export default async function PublicationStudioPage({
             ) : null}
           </section>
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+          <div className="flex flex-wrap items-center justify-end gap-4">
+            <p className="text-xs text-[var(--muted)]">
+              Este botón guarda historia y caption. El diseño se selecciona aparte en el panel derecho.
+            </p>
+            <SubmitButton
+              pendingLabel="Guardando…"
+              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
             >
-              Guardar Content Studio
-            </button>
+              Guardar cambios
+            </SubmitButton>
           </div>
         </form>
 
@@ -278,12 +302,12 @@ export default async function PublicationStudioPage({
                   value={candidateDesign.version}
                 />
                 <input type="hidden" name="variantKey" value={candidateDesign.variant} />
-                <button
-                  type="submit"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-medium transition hover:bg-slate-50"
+                <SubmitButton
+                  pendingLabel="Seleccionando…"
+                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-medium transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
                 >
                   Usar este diseño
-                </button>
+                </SubmitButton>
               </form>
             ) : null}
           </section>
