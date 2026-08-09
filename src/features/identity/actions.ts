@@ -70,6 +70,19 @@ export async function saveIdentityProfile(
     };
   }
 
+  const { error: invalidateError } = await supabase
+    .from("publications")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .in("status", ["draft", "ready"]);
+
+  if (invalidateError) {
+    return {
+      error: `La identidad se guardó, pero no se pudieron invalidar los renders anteriores: ${invalidateError.message}`,
+      success: false,
+    };
+  }
+
   revalidatePath("/settings");
   revalidatePath("/publications");
   return { error: null, success: true };
