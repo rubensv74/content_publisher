@@ -1,7 +1,11 @@
 import { SubmitButton } from "@/components/application/submit-button";
-import { refreshSourceSignalsAction } from "@/features/source-signals/actions";
+import {
+  refreshGitHubSourceSignalsAction,
+  refreshSourceSignalsAction,
+} from "@/features/source-signals/actions";
 import { getSourceSignals } from "@/features/source-signals/data";
 import type { SourceSignalSourceType } from "@/features/source-signals/types";
+import { getGitHubSourceConnectionStatus } from "@/lib/github-source/client";
 
 const sourceLabels: Record<SourceSignalSourceType, string> = {
   github: "GitHub",
@@ -19,9 +23,13 @@ function sourceClass(sourceType: SourceSignalSourceType) {
 
 export default async function SignalsPage() {
   const signals = await getSourceSignals();
+  const githubStatus = getGitHubSourceConnectionStatus();
   const localSignals = signals.filter(
     (signal) =>
       signal.sourceType === "manual-idea" || signal.sourceType === "editorial-history",
+  );
+  const githubSignals = signals.filter(
+    (signal) => signal.sourceType === "github" || signal.sourceType === "knowledge-base",
   );
 
   return (
@@ -33,18 +41,31 @@ export default async function SignalsPage() {
           </p>
           <h1 className="text-4xl font-semibold tracking-tight">Señales</h1>
           <p className="mt-4 text-base leading-7 text-[var(--muted)]">
-            Memoria ligera de hechos que podrían convertirse más adelante en oportunidades de contenido. La fuente original sigue siendo la verdad; aquí solo guardamos referencias, resumen y trazabilidad.
+            Memoria ligera de hechos que podrían convertirse en oportunidades de contenido. La fuente original sigue siendo la verdad; aquí guardamos referencias, resumen y trazabilidad.
           </p>
         </div>
 
-        <form action={refreshSourceSignalsAction}>
-          <SubmitButton
-            pendingLabel="Refrescando…"
-            className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
-          >
-            Refrescar señales locales
-          </SubmitButton>
-        </form>
+        <div className="flex flex-wrap gap-2">
+          <form action={refreshSourceSignalsAction}>
+            <SubmitButton
+              pendingLabel="Refrescando…"
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
+            >
+              Refrescar locales
+            </SubmitButton>
+          </form>
+
+          {githubStatus.configured ? (
+            <form action={refreshGitHubSourceSignalsAction}>
+              <SubmitButton
+                pendingLabel="Leyendo GitHub…"
+                className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
+              >
+                Refrescar GitHub
+              </SubmitButton>
+            </form>
+          ) : null}
+        </div>
       </header>
 
       <section className="mb-6 grid gap-4 md:grid-cols-3">
@@ -58,11 +79,27 @@ export default async function SignalsPage() {
           <p className="mt-2 text-3xl font-semibold">{localSignals.length}</p>
           <p className="mt-1 text-sm text-[var(--muted)]">ideas + historial editorial</p>
         </div>
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Siguiente conexión</p>
-          <p className="mt-2 text-lg font-semibold text-amber-950">GitHub + Knowledge Base</p>
-          <p className="mt-1 text-sm leading-6 text-amber-900/75">
-            Pendiente de cerrar la estrategia de autenticación server-side para repositorios privados.
+        <div
+          className={`rounded-2xl border p-5 ${
+            githubStatus.configured
+              ? "border-emerald-200 bg-emerald-50/60"
+              : "border-amber-200 bg-amber-50/60"
+          }`}
+        >
+          <p
+            className={`text-xs font-semibold uppercase tracking-[0.14em] ${
+              githubStatus.configured ? "text-emerald-700" : "text-amber-700"
+            }`}
+          >
+            GitHub Source Reader
+          </p>
+          <p className="mt-2 text-lg font-semibold">
+            {githubStatus.configured ? "Preparado" : "Pendiente de configurar"}
+          </p>
+          <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+            {githubStatus.configured
+              ? `${githubStatus.repositories.length} repositorio(s) en allowlist · ${githubSignals.length} señal(es) GitHub/Knowledge Base.`
+              : "Añade el token read-only y la allowlist en Vercel. El secreto nunca se almacena en Supabase ni llega al navegador."}
           </p>
         </div>
       </section>
@@ -71,7 +108,7 @@ export default async function SignalsPage() {
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
           <h2 className="text-lg font-semibold">Todavía no hay señales registradas</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[var(--muted)]">
-            Pulsa “Refrescar señales locales” para registrar de forma incremental las ideas actuales y el historial editorial disponible.
+            Refresca las fuentes locales. Cuando GitHub Source Reader esté configurado podrás incorporar también cambios de repositorios y Knowledge Base.
           </p>
         </section>
       ) : (
@@ -97,7 +134,11 @@ export default async function SignalsPage() {
                   ) : null}
                 </div>
                 <div className="text-right text-xs text-slate-500">
-                  <p>{signal.occurredAt ? new Date(signal.occurredAt).toLocaleString("es-ES") : "Sin fecha fuente"}</p>
+                  <p>
+                    {signal.occurredAt
+                      ? new Date(signal.occurredAt).toLocaleString("es-ES")
+                      : "Sin fecha fuente"}
+                  </p>
                   <p className="mt-1">{signal.analysisStatus}</p>
                 </div>
               </div>

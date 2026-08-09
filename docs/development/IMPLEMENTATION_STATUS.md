@@ -16,7 +16,7 @@ Supabase, Vercel, Buffer y el canal LinkedIn están integrados. Se ha validado u
 
 La biblioteca visual V1 dispone de implementación runtime para **12 de 12 arquetipos**, además de Build Note.
 
-Paralelamente se ha iniciado, tras aprobar AG-010, la cimentación de Suggestion Engine sin introducir todavía IA generativa ni credenciales GitHub nuevas.
+Suggestion Engine dispone ya de su cimentación de fuentes y memoria ligera. No se ha introducido todavía IA generativa.
 
 ## Arquitectura
 
@@ -25,23 +25,22 @@ Gates aprobados:
 - AG-001 — Tailwind CSS + shadcn/ui para aplicación; renderer propio para publicaciones.
 - AG-002 — Supabase Auth personal, sin signup público.
 - AG-003 — React/DOM + `html-to-image` + `pdf-lib` detrás de adaptador propio.
-- AG-004 — PostgreSQL relacional + JSONB para estructuras variables.
+- AG-004 — PostgreSQL relacional + JSONB.
 - AG-005 — Next.js App Router + `src/` + separación por responsabilidades.
-- AG-006 — assets fuente privados + bucket público separado para renders finales.
-- AG-007 — API key personal de Buffer exclusivamente server-side.
-- AG-008 — `publications.visual_config JSONB` por namespace de arquetipo.
-- AG-009 — reconciliación de Buffer bajo demanda.
-- AG-010 — source adapters + memoria ligera `source_signals`.
+- AG-006 — assets fuente privados + bucket público para renders finales.
+- AG-007 — API key personal de Buffer server-side.
+- AG-008 — `publications.visual_config JSONB` por namespace.
+- AG-009 — reconciliación Buffer bajo demanda.
+- AG-010 — source adapters + `source_signals`.
+- AG-011 — GitHub fine-grained PAT read-only + allowlist.
 
-Decisiones registradas hasta **ADR-013**.
+Decisiones registradas hasta **ADR-014**.
 
 ### Gate abierto
 
-**AG-011 — Autenticación runtime de GitHub para fuentes privadas.**
+**AG-012 — Estrategia de IA para Suggestion Engine.**
 
-Antes de que los adapters de GitHub y Knowledge Base puedan leer repositorios privados desde Vercel debe decidirse el mecanismo de autenticación. La propuesta está en:
-
-`docs/architecture/proposals/AG-011_GITHUB_RUNTIME_AUTHENTICATION.md`
+`docs/architecture/proposals/AG-012_SUGGESTION_ENGINE_AI_STRATEGY.md`
 
 ## Datos y Supabase
 
@@ -55,59 +54,80 @@ Migraciones principales:
 
 Buckets:
 
-- `content-publisher`: privado para recursos fuente;
-- `content-publisher-published`: lectura pública para renders finales consumibles por Buffer.
+- `content-publisher`: privado para fuentes;
+- `content-publisher-published`: lectura pública para renders finales.
 
 RLS protege los datos por `user_id`.
 
-## Modelo editorial y visual
+## Producto V1
+
+Implementado:
+
+- autenticación privada;
+- Ideas CRUD y conversión a Publication;
+- Content Studio;
+- identidad visual central;
+- biblioteca de recursos;
+- 12 arquetipos V1 + Build Note;
+- PNG/PDF final;
+- prevención de renders obsoletos;
+- Buffer draft/programar/publicar ahora;
+- confirmaciones para acciones externas;
+- historial y reconciliación Buffer bajo demanda;
+- política de Storage documentada.
+
+## Suggestion Engine — cimentación
+
+Arquitectura:
 
 ```text
-structured_content   → qué queremos contar
-publication_assets   → qué archivos utilizamos
-visual_config        → parámetros especializados del diseño
-archetype_key        → renderer seleccionado
-render_context       → snapshot del resultado generado
+Fuente original
+      ↓
+Source Adapter
+      ↓
+source_signals
+      ↓
+Suggestion Engine futuro
+      ↓
+Suggestion
+      ↓
+revisión humana
+      ↓
+Idea
 ```
 
-Los cambios de contenido, diseño, configuración visual, assets o identidad invalidan de forma segura los renders anteriores para publicación sin borrar su trazabilidad.
+`source_signals` conserva solo referencias, fingerprint, título/resumen, fecha, metadata ligera y estado de análisis. No replica repositorios ni documentos completos.
 
-## Ideas y Content Studio
+### Fuentes locales implementadas
 
-Ideas permite crear, editar, archivar, eliminar y convertir una idea en publicación.
+- Ideas manuales;
+- Historial editorial.
 
-Content Studio persiste historia, caption, diseño, configuración visual y recursos. Los guardados muestran feedback explícito. El render final solo se habilita si diseño, assets y configuración especializada son válidos.
+### GitHub Source Reader — AG-011
 
-## Recursos visuales
+Decisión: fine-grained PAT de solo lectura, server-side y repo-scoped.
 
-`/assets` permite cargar PNG, JPEG y WebP al bucket privado, reutilizarlos y asociarlos mediante roles como:
+Variables preparadas:
 
 ```text
-hero
-before
-after
+GITHUB_SOURCE_TOKEN
+GITHUB_SOURCE_REPOSITORIES
+GITHUB_KNOWLEDGE_BASE_REPOSITORY
 ```
 
-## Biblioteca visual V1
+Código preparado:
 
-Implementados:
+- cliente REST GitHub únicamente GET;
+- validación de allowlist antes de cualquier petición;
+- adapter GitHub para commits recientes;
+- adapter Knowledge Base diferenciado funcionalmente;
+- fingerprints estables por repositorio + commit;
+- refresco GitHub bajo demanda desde `/signals`;
+- ningún token persistido en Supabase.
 
-1. ED-01 — Bold Statement;
-2. ED-03 — Metric Hero;
-3. PR-01 — Hero Screenshot;
-4. PR-02 — Split Screenshot;
-5. PR-03 — Annotated Screenshot;
-6. PR-04 — Before / After;
-7. TE-01 — Architecture Flow;
-8. TE-02 — Code Focus;
-9. TE-03 — Process Steps;
-10. DA-01 — Data Story;
-11. CA-01 — Tutorial Sequence / Step by Step;
-12. CA-02 — Case Study.
+La credencial real no está versionada ni se solicita por chat. Su configuración manual está documentada en:
 
-Adicional: Build Note.
-
-Single-image genera 1080 × 1350. Los carruseles generan PDF más miniatura PNG para Buffer.
+`docs/operations/GITHUB_SOURCE_READER_SETUP.md`
 
 ## Buffer → LinkedIn
 
@@ -116,60 +136,13 @@ Implementado:
 - draft;
 - programar;
 - publicar ahora;
-- confirmaciones explícitas para acciones con efectos reales;
-- guardia server-side contra drafts duplicados;
-- eliminación de drafts desde Historial;
-- reconciliación bajo demanda de estados no terminales;
-- botón `Actualizar estado`.
-
-Mapeo de reconciliación:
-
-```text
-scheduled       → scheduled
-sending         → pending
-needs_approval  → pending
-sent            → published
-error           → failed
-```
+- guardia contra drafts duplicados;
+- eliminación de drafts;
+- confirmación explícita para efectos reales;
+- reconciliación bajo demanda;
+- `Actualizar estado`.
 
 La reconciliación es de lectura respecto a Buffer: no publica, reprograma ni borra contenido.
-
-## Suggestion Engine — cimentación AG-010
-
-Se ha adoptado:
-
-```text
-Fuente original = verdad
-SourceSignal    = memoria ligera
-Suggestion      = propuesta futura
-Idea            = decisión humana aceptada
-```
-
-La nueva entidad `source_signals` conserva únicamente:
-
-- fuente y referencia;
-- fingerprint;
-- tipo de señal;
-- título/resumen;
-- fecha del evento;
-- metadata JSONB ligera;
-- primera/última detección;
-- estado de análisis.
-
-No replica repositorios ni documentos completos.
-
-### Adaptadores implementados sin credenciales externas
-
-- Ideas manuales;
-- Historial editorial.
-
-### UI
-
-`/signals` permite inspeccionar la memoria registrada y refrescar manualmente las fuentes locales.
-
-### Pendiente
-
-Los adapters GitHub/Knowledge Base se detienen antes de introducir credenciales. Esa frontera es AG-011.
 
 ## Política de Storage
 
@@ -177,16 +150,16 @@ Los adapters GitHub/Knowledge Base se detienen antes de introducir credenciales.
 
 Criterio V1:
 
-- no borrar automáticamente;
-- conservar historial y configuración ligera;
-- estudiar limpieza de binarios al acercarse al 70–80 % de la cuota;
-- retención temporal de renders solo si el uso real lo justifica.
+- sin borrado automático;
+- conservar historial/configuración ligera;
+- estudiar limpieza de binarios al 70–80 % de cuota;
+- retención temporal solo si el uso real lo justifica.
 
-## Calidad
+## Calidad y despliegue
 
 GitHub Actions ejecuta instalación, ESLint, TypeScript y build Next.js.
 
-Vercel puede limitar temporalmente nuevos deployments cuando se supera su build-rate-limit; esa situación operativa no modifica el estado del código validado por CI.
+Vercel ha alcanzado temporalmente su `build-rate-limit` por el elevado número de cambios del día. Esta situación operativa puede retrasar nuevos deployments, pero no cambia el estado del código validado por CI.
 
 ## Estado de V1
 
@@ -195,10 +168,10 @@ Vercel puede limitar temporalmente nuevos deployments cuando se supera su build-
 Pendientes manuales con efecto externo:
 
 1. programar deliberadamente una publicación de prueba;
-2. comprobar reconciliación después de la hora de envío;
+2. comprobar reconciliación después del envío;
 3. verificar el post real en LinkedIn;
 4. marcar V1 como validada.
 
 ## Próxima frontera
 
-El trabajo autónomo se detiene en **AG-011** antes de conectar repositorios GitHub privados desde el runtime de Content Publisher.
+El trabajo autónomo se detiene en **AG-012** antes de introducir proveedor, credencial o coste de IA para Suggestion Engine.
