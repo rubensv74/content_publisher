@@ -47,6 +47,7 @@ export async function persistFinalRender(
     storyType: publication.storyType,
     format: publication.format,
     structuredContent: publication.structuredContent,
+    visualConfig: publication.visualConfig,
     contentSchemaVersion: publication.contentSchemaVersion,
   };
 
