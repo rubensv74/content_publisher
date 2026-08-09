@@ -4,14 +4,31 @@
 
 Plan preparado el 2026-08-10.
 
-Opportunity Radar se planifica mientras Content Publisher cierra su V1. La preparación documental y el backlog pueden avanzar ahora, pero la implementación del rastreo externo queda bloqueada hasta cerrar `AG-014_OPPORTUNITY_RADAR_EXTERNAL_SOURCES.md`.
+`AG-014` está cerrado con **Opción B — catálogo curado + adaptadores por tipo de fuente**. La implementación queda sometida a `ADR-020_ZERO_ADDITIONAL_COST_POLICY.md`: **Content Publisher debe funcionar con 0 EUR de coste adicional**.
+
+## Restricción económica permanente
+
+Esta regla tiene prioridad sobre cobertura, automatización y comodidad:
+
+> **Ningún incremento de Opportunity Radar puede requerir pagos adicionales, consumo facturado por uso, ampliaciones de plan o APIs comerciales.**
+
+Consecuencias prácticas:
+
+- solo fuentes gratuitas;
+- no OpenAI API ni otras APIs de IA facturables;
+- ChatGPT Plus se utiliza mediante handoff manual cuando se necesite IA;
+- no agregadores comerciales;
+- no billing habilitado para ampliar cuotas;
+- al alcanzar un límite gratuito, el sistema se detiene o degrada;
+- si una fuente deja de ser gratuita, se elimina o sustituye;
+- un proceso manual es preferible a una automatización de pago.
 
 ## Objetivo
 
 Construir de forma incremental una cadena que transforme señales tecnológicas externas en oportunidades profesionales accionables y, cuando proceda, en casos de estudio y Suggestions basadas en experiencia real.
 
 ```text
-External Source
+External Source gratuita
   ↓
 Source Signal
   ↓
@@ -31,8 +48,10 @@ Idea / Publication
 ## Reglas de implementación
 
 - No alterar la arquitectura base aprobada sin gate.
+- Cumplir siempre `ADR-020_ZERO_ADDITIONAL_COST_POLICY.md`.
 - Reutilizar `src/features/source-signals` para adquisición y normalización de señales.
 - Reutilizar `src/features/suggestions` para propuestas editoriales.
+- Reutilizar `ADR-019` para cualquier razonamiento de IA mediante ChatGPT Plus y flujo manual.
 - Introducir `opportunities` como frontera funcional propia solo cuando el modelo esté cerrado.
 - No mezclar una noticia con una Suggestion ni con una Idea.
 - No crear scheduler en el primer incremento.
@@ -43,27 +62,20 @@ Idea / Publication
 
 # Incrementos
 
-## OR-00 — Preparación y gate de arquitectura
+## OR-00 — Preparación y gate de arquitectura — COMPLETADO
 
-### Objetivo
-
-Cerrar el terreno antes de implementar.
-
-### Incluye
+Incluye:
 
 - concepto funcional de Opportunity Radar;
 - relación con Source Signals y Suggestion Engine;
-- AG-014 sobre estrategia de fuentes externas;
-- backlog inicial;
-- criterios de aceptación globales.
+- AG-014 cerrado con Opción B;
+- ADR-020 de coste adicional cero;
+- ADR-021 de fuentes externas curadas y gratuitas;
+- backlog inicial.
 
 ### Salida
 
-Arquitectura propuesta y trabajo ordenado sin contaminar la V1.
-
-### Gate
-
-`AG-014` debe estar aprobado antes de OR-02.
+Arquitectura aprobada para avanzar sin introducir costes adicionales.
 
 ---
 
@@ -82,16 +94,18 @@ Definir qué merece ser observado antes de construir adaptadores.
 - frecuencia razonable de cambio;
 - calidad y autoridad de la fuente;
 - condiciones de uso relevantes;
+- verificación explícita de coste adicional cero;
+- verificación de que no exige billing habilitado;
 - criterios para dar de alta o retirar una fuente;
 - reglas de relevancia profesional.
 
+### Criterio obligatorio
+
+Una fuente con coste, riesgo de cobro o necesidad de ampliar plan queda fuera del catálogo.
+
 ### Salida
 
-Un catálogo pequeño y de alta calidad suficiente para probar el radar.
-
-### Criterio
-
-No comenzar con decenas de fuentes. El primer lote debe permitir validar el flujo, no maximizar cobertura.
+Un catálogo pequeño, gratuito y de alta calidad suficiente para probar el radar.
 
 ---
 
@@ -99,29 +113,30 @@ No comenzar con decenas de fuentes. El primer lote debe permitir validar el fluj
 
 ### Objetivo
 
-Hacer que fuentes externas produzcan `source_signals` compatibles con el sistema existente.
+Hacer que fuentes externas gratuitas produzcan `source_signals` compatibles con el sistema existente.
 
 ### Incluye
 
 - extensión controlada de tipos de fuente;
-- catálogo de fuentes en configuración o persistencia según decisión final;
-- primer adaptador estructurado;
+- catálogo de fuentes;
+- primer adaptador estructurado gratuito;
 - normalización;
 - fingerprint y deduplicación;
 - refresco manual/bajo demanda;
 - trazabilidad a fuente original;
-- manejo básico de errores.
+- manejo básico de errores;
+- comportamiento fail-closed ante límites gratuitos.
 
 ### Fuera de alcance
 
 - scheduler;
 - scraping generalista;
-- scoring de oportunidades;
+- scoring con APIs de IA;
 - creación automática de Suggestions.
 
 ### Salida
 
-Una actualización real de una fuente tecnológica puede aparecer en `/signals` como señal externa explicable y deduplicada.
+Una actualización real de una fuente tecnológica gratuita puede aparecer en `/signals` como señal externa explicable y deduplicada.
 
 ---
 
@@ -135,7 +150,7 @@ Separar `señal interesante` de `oportunidad que merece acción`.
 
 - modelo funcional definitivo de Opportunity;
 - persistencia y RLS;
-- relación many-to-many con `source_signals` si procede;
+- relación con `source_signals`;
 - evaluación inicial;
 - prioridad;
 - explicación de relevancia;
@@ -154,13 +169,11 @@ Separar `señal interesante` de `oportunidad que merece acción`.
 - esfuerzo;
 - novedad respecto al historial.
 
+La evaluación determinista se prioriza. Si se necesita interpretación avanzada, se usa el handoff manual de ChatGPT Plus, nunca una API facturable.
+
 ### Salida
 
 El usuario puede revisar pocas oportunidades priorizadas y decidir cuáles merecen tiempo.
-
-### Gate posible
-
-Si la persistencia propuesta introduce un cambio relevante en el modelo de dominio, registrar ADR antes de la migración.
 
 ---
 
@@ -202,11 +215,12 @@ Transformar oportunidades y casos reales en propuestas editoriales sin duplicar 
 - priorizar casos de estudio completados;
 - mantener referencias a señales y oportunidad original;
 - deduplicar contra historial editorial;
-- conversión normal `Suggestion → Idea` ya existente.
+- conversión normal `Suggestion → Idea`;
+- reutilización del flujo manual ChatGPT Plus de ADR-019.
 
 ### Salida
 
-Suggestion Engine puede explicar que una propuesta nace de una oportunidad detectada y, cuando corresponda, de un proyecto/caso realizado.
+Suggestion Engine puede explicar que una propuesta nace de una oportunidad detectada y, cuando corresponda, de un proyecto/caso realizado sin consumir una API de pago.
 
 ---
 
@@ -238,41 +252,42 @@ Opportunity Radar funciona como una capacidad coherente y no como varias pantall
 
 ### Objetivo
 
-Eliminar el refresco manual solo cuando el radar ya haya demostrado utilidad.
+Eliminar parte del refresco manual **solo si existe una solución gratuita y verificablemente incapaz de generar cargos**.
 
 ### Requiere nuevo gate
 
 Antes de implementar se decidirá:
 
-- mecanismo de scheduler;
-- frecuencia por fuente;
+- mecanismo gratuito de scheduler;
+- frecuencia compatible con límites gratuitos;
 - límites de ejecución;
 - timeouts;
 - reintentos;
-- observabilidad;
-- alertas;
-- costes;
-- comportamiento ante fallos repetidos.
+- observabilidad sin coste;
+- comportamiento ante fallos repetidos;
+- protección frente a cobro o ampliación automática.
 
-### Salida
+### Regla de descarte
 
-Las fuentes se revisan automáticamente con una frecuencia controlada.
+Si no existe una opción sostenible con coste adicional cero, **OR-07 no se implementa y el refresco permanece manual**.
 
 # Orden recomendado
 
 ```text
-AHORA
-  OR-00  documentación + gate
-  OR-01  catálogo e investigación
+COMPLETADO
+  OR-00  documentación + gate + política 0 EUR
 
-TRAS APROBAR AG-014
-  OR-02  señales externas
+SIGUIENTE
+  OR-01  catálogo gratuito e investigación
+
+DESPUÉS
+  OR-02  señales externas gratuitas
   OR-03  oportunidades
   OR-04  casos de estudio
-  OR-05  integración editorial
+  OR-05  integración editorial con ChatGPT Plus manual
   OR-06  radar consolidado
 
-DESPUÉS DE VALIDAR EL VALOR
+SOLO SI ES GRATIS
   OR-07  scheduler
 ```
 
@@ -280,23 +295,18 @@ DESPUÉS DE VALIDAR EL VALOR
 
 Content Publisher está en Release Candidate de V1. Opportunity Radar no debe introducir cambios que retrasen el cierre de la V1.
 
-Por tanto:
-
-- documentación, investigación e issues pueden prepararse ahora;
-- cualquier cambio de código se desarrollará como trabajo posterior a V1 o de forma aislada sin comprometer el checklist de release;
-- la validación pública final de V1 mantiene prioridad sobre nuevas capacidades.
-
 ## Criterios de éxito del primer ciclo
 
-El primer ciclo de Opportunity Radar se considerará validado cuando:
+El primer ciclo se considera validado cuando:
 
-1. al menos una fuente tecnológica externa produzca señales reales y deduplicadas;
-2. una señal pueda convertirse en una Opportunity explicable;
-3. una Opportunity pueda transformarse en un caso de estudio concreto;
-4. el caso pueda alimentar Suggestion Engine sin crear contenido ficticio;
-5. el usuario pueda rechazar cualquier paso sin que el sistema fuerce la cadena;
-6. exista trazabilidad completa desde la fuente hasta la Suggestion/Idea resultante.
+1. al menos una fuente tecnológica gratuita produce señales reales y deduplicadas;
+2. una señal puede convertirse en una Opportunity explicable;
+3. una Opportunity puede transformarse en un caso de estudio concreto;
+4. el caso puede alimentar Suggestion Engine mediante el flujo sin API de pago;
+5. el usuario puede rechazar cualquier paso;
+6. existe trazabilidad completa desde la fuente hasta la Suggestion/Idea;
+7. el coste económico adicional observado y potencial es 0 EUR.
 
 ## Criterio de producto
 
-Si el sistema genera muchas señales pero pocas acciones útiles, el problema no se resuelve añadiendo más fuentes. Se reduce ruido, se mejora relevancia y se revisa el scoring.
+Si el sistema genera muchas señales pero pocas acciones útiles, no se resuelve comprando mejores fuentes ni más capacidad. Se reduce ruido, se mejora relevancia y se revisa el diseño dentro de la restricción de coste cero.
