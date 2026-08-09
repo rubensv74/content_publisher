@@ -14,6 +14,8 @@ export type PublicationStoryContent = {
   cta?: string | null;
 };
 
+export type PublicationVisualConfig = Record<string, Record<string, unknown>>;
+
 export type PublicationRecord = {
   id: string;
   source_idea_id: string | null;
@@ -23,6 +25,7 @@ export type PublicationRecord = {
   format: PublicationFormat;
   status: PublicationStatus;
   structured_content: PublicationStoryContent;
+  visual_config: PublicationVisualConfig;
   content_schema_version: number;
   linkedin_text: string | null;
   archetype_key: string | null;
