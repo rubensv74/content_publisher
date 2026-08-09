@@ -24,6 +24,7 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "editorial",
     use: "Resultados, rendimiento, cifras y comparaciones.",
     variants: ["single metric", "metric + delta", "metric + mini chart"],
+    implementationKey: "metric-hero",
   },
   {
     code: "PR-01",
@@ -47,6 +48,7 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "product",
     use: "Explicar decisiones de interfaz o funcionalidades mediante marcadores.",
     variants: ["numbered", "focus zones", "zoom detail"],
+    implementationKey: "annotated-screenshot",
   },
   {
     code: "PR-04",
@@ -54,6 +56,7 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "product",
     use: "Mostrar evolución de interfaz, arquitectura, código o proceso.",
     variants: ["split", "stacked", "carousel reveal"],
+    implementationKey: "before-after",
   },
   {
     code: "TE-01",
@@ -69,6 +72,7 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "technical",
     use: "Mostrar un fragmento de código corto con contexto y aprendizaje.",
     variants: ["code first", "explanation first", "before/after code"],
+    implementationKey: "code-focus",
   },
   {
     code: "TE-03",
@@ -84,6 +88,7 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "data",
     use: "Power BI, análisis, métricas, rendimiento y decisiones basadas en datos.",
     variants: ["KPI", "bar/line", "comparison"],
+    implementationKey: "data-story",
   },
   {
     code: "CA-01",
