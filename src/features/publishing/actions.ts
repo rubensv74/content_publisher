@@ -121,6 +121,38 @@ export async function publishPublication(formData: FormData) {
     throw new Error("El render seleccionado no existe o todavía no está listo.");
   }
 
+  if (action === "draft") {
+    const { data: existingDraft, error: existingDraftError } = await supabase
+      .from("publishing_jobs")
+      .select("id,external_id")
+      .eq("user_id", userId)
+      .eq("publication_id", publicationId)
+      .eq("render_id", renderId)
+      .eq("provider", "buffer")
+      .eq("action", "draft")
+      .eq("status", "sent")
+      .contains("provider_payload", { channelId })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingDraftError) {
+      throw new Error(
+        `No se pudo comprobar si ya existe un draft en Buffer: ${existingDraftError.message}`,
+      );
+    }
+
+    if (existingDraft?.external_id) {
+      return {
+        ok: true as const,
+        action,
+        externalId: existingDraft.external_id,
+        providerStatus: "draft",
+        reused: true as const,
+      };
+    }
+  }
+
   await assertPublicUrl(render.publicUrl);
 
   if (render.renderType === "pdf") {
@@ -231,6 +263,7 @@ export async function publishPublication(formData: FormData) {
       action,
       externalId: post.id,
       providerStatus: post.status ?? null,
+      reused: false as const,
     };
   } catch (error) {
     const message =
