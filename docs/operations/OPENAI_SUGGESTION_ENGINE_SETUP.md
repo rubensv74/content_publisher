@@ -6,7 +6,7 @@ Fecha: 2026-08-09
 
 Configurar las llamadas server-side de Suggestion Engine sin exponer secretos y sin fijar en código un modelo concreto.
 
-Esta guía deriva de `ADR-015_SUGGESTION_ENGINE_OPENAI_ADAPTER.md`.
+Esta guía deriva de `ADR-015_SUGGESTION_ENGINE_OPENAI_ADAPTER.md` y `ADR-016_SUGGESTION_PERSISTENCE_AND_LIFECYCLE.md`.
 
 ## Variables necesarias
 
@@ -66,6 +66,10 @@ máximo 20 señales
 OpenAI
       ↓
 máximo 5 propuestas estructuradas
+      ↓
+suggestions
+      ↓
+revisión humana
 ```
 
 Además:
@@ -75,7 +79,8 @@ Además:
 - no se envían repositorios completos;
 - se usa Responses API con Structured Outputs;
 - el request utiliza `store: false`;
-- la respuesta se valida contra IDs de señales realmente enviados.
+- la respuesta se valida contra IDs de señales realmente enviados;
+- las propuestas quedan persistidas y nunca entran directamente en Ideas.
 
 Sobre `store: false` y controles de datos:
 
@@ -83,16 +88,16 @@ https://platform.openai.com/docs/models/default-usage-policies-by-endpoint
 
 ## 5. Validación prevista
 
-Cuando AG-013 defina cómo persistir Suggestions y la UI esté implementada:
+La UI de `/suggestions` ya está preparada. Cuando las variables estén configuradas:
 
-1. comprobar que la aplicación detecta configuración OpenAI;
-2. seleccionar un conjunto pequeño de señales reales;
-3. generar propuestas;
-4. comprobar que no inventan datos;
-5. comprobar que cada propuesta referencia señales existentes;
-6. revisar coste/uso de tokens;
-7. aceptar una propuesta y verificar el flujo hasta Idea;
-8. descartar otra y verificar que no reaparece como duplicado inmediato.
+1. refrescar las señales disponibles;
+2. generar un lote pequeño de propuestas;
+3. comprobar que no inventan datos;
+4. comprobar que cada propuesta referencia señales existentes;
+5. revisar coste/uso en la plataforma API;
+6. aceptar una propuesta;
+7. convertirla explícitamente en Idea y verificar la trazabilidad;
+8. descartar otra y confirmar que permanece registrada como descartada.
 
 ## 6. Rotación
 
@@ -108,4 +113,4 @@ No documentar nunca el valor de la clave; solo su fecha de creación/rotación s
 
 ## Estado actual
 
-La integración de código está preparada, pero las llamadas reales permanecen inactivas mientras no se configuren las variables anteriores y no se cierre el gate de persistencia de Suggestions.
+AG-013 está cerrado y la persistencia/UI de Suggestions está implementada. Las llamadas reales permanecen inactivas únicamente mientras `OPENAI_API_KEY` y `OPENAI_SUGGESTION_MODEL` no estén configuradas en el entorno del servidor.
