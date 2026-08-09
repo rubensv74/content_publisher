@@ -74,6 +74,7 @@ export const v1ArchetypePlan: V1ArchetypePlanItem[] = [
     family: "technical",
     use: "Método de trabajo, proceso o checklist técnico.",
     variants: ["vertical", "horizontal", "timeline"],
+    implementationKey: "process-steps",
   },
   {
     code: "DA-01",
