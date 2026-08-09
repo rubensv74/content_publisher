@@ -27,6 +27,22 @@ async function getAuthenticatedUserId() {
   return { supabase, userId };
 }
 
+async function touchPublication(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  publicationId: string,
+  userId: string,
+) {
+  const { error } = await supabase
+    .from("publications")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", publicationId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`El recurso cambió, pero no se pudo invalidar el render anterior: ${error.message}`);
+  }
+}
+
 async function replacePublicationAssetRole(
   publicationId: string,
   assetId: string,
@@ -76,6 +92,7 @@ async function replacePublicationAssetRole(
     throw new Error(`No se pudo asociar el recurso: ${insertError.message}`);
   }
 
+  await touchPublication(supabase, publicationId, userId);
   revalidatePath(`/publications/${publicationId}/studio`);
 }
 
@@ -95,6 +112,7 @@ async function removePublicationAssetRoleByName(
     throw new Error(`No se pudo retirar el recurso: ${error.message}`);
   }
 
+  await touchPublication(supabase, publicationId, userId);
   revalidatePath(`/publications/${publicationId}/studio`);
 }
 
