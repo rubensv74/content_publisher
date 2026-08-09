@@ -6,7 +6,7 @@ Fecha de actualización: 2026-08-09
 
 Content Publisher está en **Release Candidate de V1**.
 
-Flujo operativo:
+Flujo operativo principal:
 
 ```text
 IDEA → STORY → FORMAT → DESIGN → PREVIEW → RENDER READY → BUFFER → LINKEDIN
@@ -16,31 +16,32 @@ Supabase, Vercel, Buffer y el canal LinkedIn están integrados. Se ha validado u
 
 La biblioteca visual V1 dispone de implementación runtime para **12 de 12 arquetipos**, además de Build Note.
 
-Suggestion Engine dispone ya de su cimentación de fuentes y memoria ligera. No se ha introducido todavía IA generativa.
+Suggestion Engine dispone ya de adquisición de señales, memoria ligera, lectura GitHub preparada y una frontera de IA aprobada e implementada a nivel de contrato/cliente. La generación real de Suggestions permanece detenida hasta cerrar su persistencia y ciclo de vida.
 
 ## Arquitectura
 
 Gates aprobados:
 
-- AG-001 — Tailwind CSS + shadcn/ui para aplicación; renderer propio para publicaciones.
-- AG-002 — Supabase Auth personal, sin signup público.
-- AG-003 — React/DOM + `html-to-image` + `pdf-lib` detrás de adaptador propio.
+- AG-001 — Tailwind CSS + shadcn/ui y renderer propio.
+- AG-002 — Supabase Auth personal.
+- AG-003 — React/DOM + `html-to-image` + `pdf-lib`.
 - AG-004 — PostgreSQL relacional + JSONB.
-- AG-005 — Next.js App Router + `src/` + separación por responsabilidades.
-- AG-006 — assets fuente privados + bucket público para renders finales.
-- AG-007 — API key personal de Buffer server-side.
-- AG-008 — `publications.visual_config JSONB` por namespace.
+- AG-005 — Next.js App Router + `src/`.
+- AG-006 — assets privados + renders finales públicos.
+- AG-007 — Buffer server-side.
+- AG-008 — `visual_config JSONB`.
 - AG-009 — reconciliación Buffer bajo demanda.
 - AG-010 — source adapters + `source_signals`.
 - AG-011 — GitHub fine-grained PAT read-only + allowlist.
+- AG-012 — OpenAI detrás de `SuggestionModel` con Structured Outputs.
 
-Decisiones registradas hasta **ADR-014**.
+Decisiones registradas hasta **ADR-015**.
 
 ### Gate abierto
 
-**AG-012 — Estrategia de IA para Suggestion Engine.**
+**AG-013 — Persistencia y ciclo de vida de Suggestions.**
 
-`docs/architecture/proposals/AG-012_SUGGESTION_ENGINE_AI_STRATEGY.md`
+`docs/architecture/proposals/AG-013_SUGGESTION_PERSISTENCE_AND_LIFECYCLE.md`
 
 ## Datos y Supabase
 
@@ -59,6 +60,8 @@ Buckets:
 
 RLS protege los datos por `user_id`.
 
+No se ha creado todavía una tabla `suggestions`; depende de AG-013.
+
 ## Producto V1
 
 Implementado:
@@ -76,7 +79,7 @@ Implementado:
 - historial y reconciliación Buffer bajo demanda;
 - política de Storage documentada.
 
-## Suggestion Engine — cimentación
+## Suggestion Engine — adquisición de señales
 
 Arquitectura:
 
@@ -87,7 +90,9 @@ Source Adapter
       ↓
 source_signals
       ↓
-Suggestion Engine futuro
+Suggestion Engine
+      ↓
+SuggestionModel
       ↓
 Suggestion
       ↓
@@ -98,36 +103,54 @@ Idea
 
 `source_signals` conserva solo referencias, fingerprint, título/resumen, fecha, metadata ligera y estado de análisis. No replica repositorios ni documentos completos.
 
-### Fuentes locales implementadas
+Fuentes locales implementadas:
 
 - Ideas manuales;
 - Historial editorial.
 
-### GitHub Source Reader — AG-011
+GitHub Source Reader preparado:
 
-Decisión: fine-grained PAT de solo lectura, server-side y repo-scoped.
+- cliente REST únicamente GET;
+- allowlist antes de cualquier petición;
+- adapter GitHub para commits recientes;
+- adapter Knowledge Base diferenciado;
+- fingerprints por repositorio + commit;
+- refresco bajo demanda;
+- ningún token persistido en Supabase.
+
+Configuración operativa:
+
+`docs/operations/GITHUB_SOURCE_READER_SETUP.md`
+
+## Suggestion Engine — IA AG-012
+
+Decisión: OpenAI como primer proveedor detrás del contrato interno `SuggestionModel`.
+
+Código preparado:
+
+- tipos internos de `SuggestionCandidate`;
+- preselección determinista de hasta 20 señales;
+- límite de hasta 5 propuestas por ejecución;
+- cliente server-side para Responses API;
+- Structured Outputs con JSON Schema estricto;
+- salida con historia, formato, familia visual, arquetipo, prioridad y confianza;
+- comprobación de que los IDs fuente devueltos pertenecen al lote enviado;
+- modelo configurable por entorno;
+- solicitudes con `store: false`;
+- no se envía `metadata` arbitraria en el primer contrato.
 
 Variables preparadas:
 
 ```text
-GITHUB_SOURCE_TOKEN
-GITHUB_SOURCE_REPOSITORIES
-GITHUB_KNOWLEDGE_BASE_REPOSITORY
+OPENAI_API_KEY
+OPENAI_SUGGESTION_MODEL
 ```
 
-Código preparado:
+No se configura ningún secreto en el repositorio. La activación operativa está documentada en:
 
-- cliente REST GitHub únicamente GET;
-- validación de allowlist antes de cualquier petición;
-- adapter GitHub para commits recientes;
-- adapter Knowledge Base diferenciado funcionalmente;
-- fingerprints estables por repositorio + commit;
-- refresco GitHub bajo demanda desde `/signals`;
-- ningún token persistido en Supabase.
+`docs/operations/OPENAI_SUGGESTION_ENGINE_SETUP.md`
 
-La credencial real no está versionada ni se solicita por chat. Su configuración manual está documentada en:
-
-`docs/operations/GITHUB_SOURCE_READER_SETUP.md`
+La generación real no se expone todavía en UI porque AG-013 debe definir dónde viven las Suggestions y cómo se aceptan/descartan.
 
 ## Buffer → LinkedIn
 
@@ -159,7 +182,7 @@ Criterio V1:
 
 GitHub Actions ejecuta instalación, ESLint, TypeScript y build Next.js.
 
-Vercel ha alcanzado temporalmente su `build-rate-limit` por el elevado número de cambios del día. Esta situación operativa puede retrasar nuevos deployments, pero no cambia el estado del código validado por CI.
+Vercel ha alcanzado temporalmente su `build-rate-limit` por el elevado número de cambios del día. Esta situación operativa puede retrasar deployments, pero no cambia el estado del código validado por CI.
 
 ## Estado de V1
 
@@ -174,4 +197,4 @@ Pendientes manuales con efecto externo:
 
 ## Próxima frontera
 
-El trabajo autónomo se detiene en **AG-012** antes de introducir proveedor, credencial o coste de IA para Suggestion Engine.
+El trabajo autónomo se detiene en **AG-013** antes de crear persistencia de Suggestions o activar llamadas reales a OpenAI desde la interfaz.
