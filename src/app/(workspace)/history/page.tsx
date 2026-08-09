@@ -1,7 +1,10 @@
 import Link from "next/link";
 
+import { SubmitButton } from "@/components/application/submit-button";
 import { DeleteDraftButton } from "@/features/publishing/delete-draft-button";
 import { getPublishingHistory } from "@/features/publishing/history";
+import { refreshPublishingStatuses } from "@/features/publishing/reconciliation-actions";
+import { reconcilePublishingJobs } from "@/features/publishing/reconciliation";
 
 function actionLabel(action: string) {
   if (action === "publish-now") return "Publicar ahora";
@@ -37,6 +40,7 @@ function statusClass(status: string) {
 }
 
 export default async function HistoryPage() {
+  const reconciliation = await reconcilePublishingJobs();
   const history = await getPublishingHistory();
   const activeDrafts = history.filter(
     (item) => item.action === "draft" && item.status === "sent" && item.externalId,
@@ -44,15 +48,35 @@ export default async function HistoryPage() {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <header className="mb-8 max-w-3xl">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-          Editorial History
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight">Historial</h1>
-        <p className="mt-4 text-base leading-7 text-[var(--muted)]">
-          Aquí puedes comprobar qué se envió a Buffer, qué render se utilizó y el resultado de cada operación.
-        </p>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-5">
+        <div className="max-w-3xl">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+            Editorial History
+          </p>
+          <h1 className="text-4xl font-semibold tracking-tight">Historial</h1>
+          <p className="mt-4 text-base leading-7 text-[var(--muted)]">
+            Aquí puedes comprobar qué se envió a Buffer, qué render se utilizó y el resultado de cada operación. Los estados no terminales se contrastan con Buffer al abrir esta página.
+          </p>
+        </div>
+
+        <form action={refreshPublishingStatuses}>
+          <SubmitButton
+            pendingLabel="Actualizando…"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
+          >
+            Actualizar estado
+          </SubmitButton>
+        </form>
       </header>
+
+      {reconciliation.failed > 0 ? (
+        <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
+          <p className="font-semibold">No se pudieron comprobar todos los estados de Buffer.</p>
+          <p className="mt-1">
+            {reconciliation.failed} de {reconciliation.checked} comprobaciones fallaron. El historial local sigue disponible y puedes volver a intentar la actualización manualmente.
+          </p>
+        </section>
+      ) : null}
 
       {activeDrafts.length > 1 ? (
         <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
