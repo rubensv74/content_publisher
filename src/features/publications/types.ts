@@ -8,8 +8,10 @@ export type PublicationStoryContent = {
   problem?: string | null;
   attempts?: string | null;
   solution?: string | null;
+  result?: string | null;
   learning?: string | null;
   insight?: string | null;
+  cta?: string | null;
 };
 
 export type PublicationRecord = {
