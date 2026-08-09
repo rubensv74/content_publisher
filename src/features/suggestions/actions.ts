@@ -64,14 +64,12 @@ async function readChatGPTImport(formData: FormData) {
 }
 
 export async function importChatGPTSuggestionsAction(formData: FormData) {
-  let raw: string;
+  let imported = 0;
 
   try {
-    raw = await readChatGPTImport(formData);
+    const raw = await readChatGPTImport(formData);
     const result = await persistChatGPTSuggestionResponse(raw);
-    revalidatePath("/suggestions");
-    revalidatePath("/signals");
-    redirect(`/suggestions?imported=${result.imported}`);
+    imported = result.imported;
   } catch (error) {
     const message =
       error instanceof Error
@@ -80,6 +78,10 @@ export async function importChatGPTSuggestionsAction(formData: FormData) {
     const params = new URLSearchParams({ importError: message.slice(0, 240) });
     redirect(`/suggestions?${params.toString()}`);
   }
+
+  revalidatePath("/suggestions");
+  revalidatePath("/signals");
+  redirect(`/suggestions?imported=${imported}`);
 }
 
 export async function acceptSuggestionAction(formData: FormData) {
