@@ -202,7 +202,7 @@ export default async function SuggestionsPage({ searchParams }: Props) {
             </p>
             <SubmitButton
               pendingLabel="Validando e importando…"
-              className="rounded-xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60"
             >
               3. Importar sugerencias
             </SubmitButton>
@@ -298,12 +298,12 @@ export default async function SuggestionsPage({ searchParams }: Props) {
                           name="suggestionId"
                           value={suggestion.id}
                         />
-                        <button
-                          type="submit"
-                          className="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white"
+                        <SubmitButton
+                          pendingLabel="Aceptando…"
+                          className="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60"
                         >
                           Aceptar
-                        </button>
+                        </SubmitButton>
                       </form>
                       <form action={dismissSuggestionAction}>
                         <input
@@ -311,12 +311,12 @@ export default async function SuggestionsPage({ searchParams }: Props) {
                           name="suggestionId"
                           value={suggestion.id}
                         />
-                        <button
-                          type="submit"
-                          className="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600"
+                        <SubmitButton
+                          pendingLabel="Descartando…"
+                          className="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600 disabled:cursor-wait disabled:opacity-60"
                         >
                           Descartar
-                        </button>
+                        </SubmitButton>
                       </form>
                     </>
                   ) : null}
@@ -328,12 +328,12 @@ export default async function SuggestionsPage({ searchParams }: Props) {
                           name="suggestionId"
                           value={suggestion.id}
                         />
-                        <button
-                          type="submit"
-                          className="rounded-xl bg-violet-700 px-3.5 py-2 text-sm font-semibold text-white"
+                        <SubmitButton
+                          pendingLabel="Convirtiendo…"
+                          className="rounded-xl bg-violet-700 px-3.5 py-2 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60"
                         >
                           Convertir en Idea
-                        </button>
+                        </SubmitButton>
                       </form>
                       <form action={dismissSuggestionAction}>
                         <input
@@ -341,12 +341,12 @@ export default async function SuggestionsPage({ searchParams }: Props) {
                           name="suggestionId"
                           value={suggestion.id}
                         />
-                        <button
-                          type="submit"
-                          className="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600"
+                        <SubmitButton
+                          pendingLabel="Descartando…"
+                          className="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600 disabled:cursor-wait disabled:opacity-60"
                         >
                           Descartar
-                        </button>
+                        </SubmitButton>
                       </form>
                     </>
                   ) : null}

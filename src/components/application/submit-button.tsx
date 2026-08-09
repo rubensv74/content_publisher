@@ -21,9 +21,20 @@ export function SubmitButton({
       type="submit"
       disabled={pending}
       aria-disabled={pending}
-      className={className}
+      aria-busy={pending}
+      className={`inline-flex items-center justify-center gap-2 ${className ?? ""}`}
     >
-      {pending ? pendingLabel : children}
+      {pending ? (
+        <>
+          <span
+            aria-hidden="true"
+            className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent"
+          />
+          <span>{pendingLabel}</span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }
