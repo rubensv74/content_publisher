@@ -8,6 +8,7 @@ import type { FinalRenderPayload } from "@/publication-renderer/export/final-ren
 import { ArchitectureFlowPreview } from "@/publication-renderer/preview/architecture-flow-preview";
 import { BoldStatementPreview } from "@/publication-renderer/preview/bold-statement-preview";
 import { BuildNotePreview } from "@/publication-renderer/preview/build-note-preview";
+import { CaseStudyPreview } from "@/publication-renderer/preview/case-study-preview";
 import { HeroScreenshotPreview } from "@/publication-renderer/preview/hero-screenshot-preview";
 import { ProcessStepsPreview } from "@/publication-renderer/preview/process-steps-preview";
 import { SplitScreenshotPreview } from "@/publication-renderer/preview/split-screenshot-preview";
@@ -76,6 +77,15 @@ export function PersistedPublicationPreview({
   if (publication.archetypeKey === "process-steps") {
     return (
       <ProcessStepsPreview
+        publication={publication}
+        persistFinalRender={persistenceHandler}
+      />
+    );
+  }
+
+  if (publication.archetypeKey === "case-study") {
+    return (
+      <CaseStudyPreview
         publication={publication}
         persistFinalRender={persistenceHandler}
       />
