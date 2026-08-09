@@ -4,65 +4,56 @@ Fecha de actualización: 2026-08-09
 
 ## Resumen ejecutivo
 
-Content Publisher dispone ya de un recorrido V1 ejecutable en producción:
+Content Publisher está en **Release Candidate de V1**.
+
+El recorrido implementado es:
 
 ```text
-IDEA → STORY → FORMAT → DESIGN → PREVIEW → RENDER READY → BUFFER DRAFT
+IDEA → STORY → FORMAT → DESIGN → PREVIEW → RENDER READY → BUFFER → LINKEDIN
 ```
 
-La integración real con Supabase, Vercel, Buffer y el canal personal de LinkedIn está validada. Durante las pruebas se ha detenido deliberadamente el recorrido antes de una publicación pública real.
+La integración real con Supabase, Vercel, Buffer y el canal personal de LinkedIn está operativa. Se ha validado un draft real en Buffer. La única validación funcional de extremo a extremo que continúa pendiente es realizar deliberadamente una publicación pública real en LinkedIn y comprobar el resultado final.
 
-La biblioteca visual objetivo de V1 está ya cubierta: **12 de 12 arquetipos previstos disponen de una implementación base operativa**, además de Build Note como composición editorial adicional.
+La biblioteca visual objetivo de V1 está cubierta: **12 de 12 arquetipos previstos disponen de implementación runtime**, además de Build Note como composición editorial adicional.
 
 ## Arquitectura
 
 Gates aprobados:
 
-- AG-001 — Tailwind CSS + shadcn/ui para la aplicación; renderer propio para publicaciones.
+- AG-001 — Tailwind CSS + shadcn/ui para aplicación; renderer propio para publicaciones.
 - AG-002 — Supabase Auth con email + contraseña, sin registro público.
-- AG-003 — renderizado React/DOM con `html-to-image` y PDF con `pdf-lib` detrás de adaptador propio.
-- AG-004 — modelo relacional PostgreSQL + JSONB para estructuras variables.
+- AG-003 — React/DOM + `html-to-image` + `pdf-lib` detrás de adaptador propio.
+- AG-004 — PostgreSQL relacional + JSONB para estructuras variables.
 - AG-005 — Next.js App Router + `src/` + separación por responsabilidades.
 - AG-006 — assets fuente privados + bucket público separado para renders finales.
 - AG-007 — API key personal de Buffer exclusivamente server-side.
-- AG-008 — `publications.visual_config JSONB` namespaced por arquetipo para inputs visuales especializados.
+- AG-008 — `publications.visual_config JSONB` por namespace de arquetipo.
+- AG-009 — reconciliación de estados de Buffer bajo demanda.
 
-Decisiones registradas hasta **ADR-011**.
+Decisiones registradas hasta **ADR-012**.
 
-AG-008 queda cerrado mediante `ADR-011_SPECIALIZED_ARCHETYPE_VISUAL_CONFIG.md`.
+**No existe un gate de arquitectura abierto actualmente.**
 
-## Modelo de contenido visual especializado
+## Modelo editorial y visual
 
-La publicación mantiene tres responsabilidades separadas:
+La publicación mantiene responsabilidades separadas:
 
 ```text
 structured_content   → qué queremos contar
 publication_assets   → qué archivos utilizamos
-visual_config        → parámetros visuales especializados
+visual_config        → parámetros especializados del diseño
+archetype_key        → qué renderer interpreta esos datos
 ```
 
-`visual_config` se almacena como JSONB en `publications` y conserva namespaces independientes por arquetipo, por ejemplo:
+`visual_config` conserva configuraciones independientes por arquetipo. Cambiar temporalmente de diseño no destruye la configuración guardada de otro arquetipo.
 
-```json
-{
-  "metric-hero": {
-    "value": "42%",
-    "label": "menos tiempo"
-  },
-  "code-focus": {
-    "language": "typescript",
-    "snippet": "..."
-  }
-}
-```
+Los renders finales conservan un snapshot en `render_context` con contenido, configuración visual, identidad, diseño, assets y datos técnicos de exportación.
 
-Cada arquetipo especializado valida únicamente su propio namespace antes de habilitar un render final.
-
-## Infraestructura operativa
+## Infraestructura
 
 ### Supabase
 
-Proyecto dedicado activo.
+Proyecto dedicado activo con RLS por usuario.
 
 Migraciones principales:
 
@@ -73,10 +64,8 @@ Migraciones principales:
 
 Buckets:
 
-- `content-publisher`: privado para recursos fuente;
-- `content-publisher-published`: lectura pública para renders finales consumibles por Buffer.
-
-El modelo mantiene RLS por `user_id` y rutas de Storage con prefijo UUID del usuario.
+- `content-publisher`: privado para fuentes;
+- `content-publisher-published`: lectura pública para archivos finales consumibles por Buffer.
 
 ### Vercel
 
@@ -100,67 +89,64 @@ BUFFER_API_KEY
 
 Validado:
 
-- login desde producción;
+- login de producción;
 - sesión persistente;
 - workspace privado;
-- RLS sobre datos propios;
+- RLS;
 - cierre de sesión;
-- ausencia de signup público.
+- sin signup público.
 
 ## Ideas
 
-La bandeja de Ideas permite crear, listar, editar, archivar, eliminar y convertir una Idea en Publication.
+La bandeja permite:
+
+- crear;
+- listar;
+- editar;
+- archivar;
+- eliminar;
+- convertir una idea en publicación.
 
 ## Content Studio
 
-Desde una publicación se puede persistir:
+Puede persistir:
 
 - título y tema;
 - tipo de historia;
-- problema o contexto;
-- intentos previos;
-- decisión o solución;
+- problema/contexto;
+- intentos;
+- decisión/solución;
 - resultado;
 - aprendizaje;
 - idea transferible;
-- cierre o CTA;
+- cierre/CTA;
 - caption de LinkedIn;
 - diseño y variante;
-- configuración visual especializada;
+- configuración visual específica;
 - assets asociados.
 
-Los guardados muestran progreso y confirmación explícitos.
+Los botones de guardado muestran progreso y confirmación.
 
-Studio descubre dinámicamente los arquetipos compatibles con formato y tipo de historia. Los diseños especializados muestran sus propios campos solo cuando son necesarios.
+Studio filtra dinámicamente los diseños compatibles y bloquea el render final cuando falta un asset obligatorio o una configuración especializada válida.
 
-## Biblioteca de recursos visuales
+## Recursos visuales
 
-`/assets` permite:
+`/assets` permite subir PNG, JPEG y WebP al bucket privado.
 
-- subir PNG, JPEG y WebP;
-- almacenar originales en el bucket privado;
-- registrar MIME, dimensiones, tamaño y nombre original;
-- visualizar mediante signed URLs temporales;
-- reutilizar recursos en varias publicaciones;
-- eliminar recursos cuando ya no son necesarios.
+Capacidades:
 
-Roles usados actualmente en publicaciones:
+- límite de carga controlado;
+- MIME, dimensiones, tamaño y nombre original;
+- signed URLs temporales para visualización;
+- reutilización en varias publicaciones;
+- eliminación manual;
+- roles `hero`, `before` y `after`.
 
-```text
-hero
-before
-after
-```
+Los cambios de assets invalidan los renders anteriores sin borrar su trazabilidad.
 
-Los cambios de assets invalidan de forma segura los renders anteriores mediante la marca temporal de la publicación.
+## Biblioteca visual V1
 
-## Renderer visual
-
-El renderer permanece aislado de la UI de aplicación conforme a ADR-004.
-
-### Cobertura V1
-
-Los **12 arquetipos objetivo** tienen una implementación base runtime:
+Implementados:
 
 1. ED-01 — Bold Statement;
 2. ED-03 — Metric Hero;
@@ -175,147 +161,129 @@ Los **12 arquetipos objetivo** tienen una implementación base runtime:
 11. CA-01 — Tutorial Sequence / Step by Step;
 12. CA-02 — Case Study.
 
-Además existe **Build Note**, arquetipo editorial adicional utilizado en la primera demo real.
+Adicional:
 
-### Arquetipos especializados incorporados con AG-008
+- Build Note — composición editorial usada en la primera demo real.
 
-**Metric Hero**
-
-- valor principal;
-- etiqueta;
-- delta opcional;
-- contexto opcional;
-- PNG 1080 × 1350.
-
-**Annotated Screenshot**
-
-- requiere asset `hero`;
-- entre 1 y 4 anotaciones;
-- posición X/Y porcentual;
-- callouts numerados sobre el screenshot;
-- PNG 1080 × 1350.
-
-**Before / After**
-
-- requiere assets `before` y `after`;
-- etiquetas configurables;
-- resumen del cambio;
-- composición split;
-- PNG 1080 × 1350.
-
-**Code Focus**
-
-- lenguaje;
-- snippet;
-- líneas destacadas opcionales;
-- explicación breve;
-- PNG 1080 × 1350.
-
-**Data Story**
-
-- título;
-- unidad opcional;
-- serie numérica de 2–5 valores;
-- insight/takeaway;
-- visualización de barras sin dependencia externa de charting;
-- PNG 1080 × 1350.
-
-Los carruseles existentes continúan generándose como PDF más miniatura PNG de portada para Buffer.
-
-## Persistencia y trazabilidad de renders
-
-Flujo:
-
-```text
-Preview React
-  ↓
-PNG / PDF
-  ↓
-renders.status = pending
-  ↓
-content-publisher-published
-  ↓
-renders.status = ready
-  ↓
-URL HTTPS pública estable
-```
-
-`render_context` conserva snapshot de:
-
-- contenido editorial;
-- `visual_config`;
-- versión de esquema;
-- arquetipo y variante;
-- identidad;
-- IDs, roles y metadatos de assets;
-- datos técnicos de exportación;
-- miniaturas cuando aplica.
-
-No se guardan signed URLs temporales como parte de la evidencia del render.
+Los formatos de imagen generan 1080 × 1350. Los carruseles generan PDF y miniatura PNG para Buffer.
 
 ## Protección contra renders obsoletos
 
-Un render solo alcanza el panel Publish cuando:
+Un render solo llega al panel Publish cuando:
 
-- coincide con el arquetipo guardado;
-- coincide con la variante guardada;
-- fue generado después de la última modificación relevante;
-- están presentes los assets requeridos;
-- la configuración visual especializada es válida.
+- arquetipo y variante coinciden con la selección guardada;
+- se generó después de la última modificación relevante;
+- están presentes los assets obligatorios;
+- la configuración visual requerida es válida.
 
-Cambiar historia, diseño, configuración visual, assets o identidad hace que un render anterior siga siendo trazable pero deje de estar habilitado para publicar.
-
-## Política futura de Storage
-
-Se ha documentado en:
-
-`docs/operations/STORAGE_RETENTION_POLICY.md`
-
-Criterio actual:
-
-- conservar indefinidamente historial editorial y datos ligeros;
-- conservar la configuración necesaria para reconstrucción;
-- no borrar automáticamente PNG/PDF ni assets en V1;
-- estudiar limpieza manual/asistida cuando Storage se aproxime al 70–80 % de la cuota disponible;
-- priorizar la eliminación de renders antiguos y assets puntuales antes de perder trazabilidad editorial;
-- una política temporal de 90–180 días para renders publicados solo se evaluará si el volumen real lo justifica.
+Cambiar contenido, diseño, `visual_config`, asset o identidad obliga a generar un nuevo render.
 
 ## Buffer → LinkedIn
 
 Validado en producción:
 
 - API key server-side;
-- autenticación con Buffer;
-- cuenta y organización;
-- canal LinkedIn personal;
-- lectura de renders públicos;
+- cuenta Buffer;
+- organización;
+- canal LinkedIn;
+- acceso de Buffer a los renders públicos;
 - creación real de drafts.
 
 Modos implementados:
 
-- publicar ahora;
+- draft;
 - programar;
-- guardar draft.
+- publicar ahora.
 
-No se ha realizado todavía una publicación pública real durante las pruebas.
-
-## Protección contra drafts duplicados
-
-La primera demo permitió detectar un problema de feedback que provocó varias pulsaciones válidas. Se corrigió con:
+Medidas de seguridad y UX:
 
 - progreso visible;
-- bloqueo durante la operación;
-- mensaje de éxito;
-- bloqueo inmediato después del éxito;
-- guardia server-side contra duplicados para publicación + render + canal;
-- eliminación explícita desde Historial;
-- estado local `cancelled` cuando se elimina un draft de Buffer.
+- guardia server-side contra drafts duplicados;
+- eliminación explícita de drafts desde Historial;
+- confirmación explícita antes de **Programar**;
+- confirmación explícita adicional antes de **Publicar ahora**.
 
-## Publishing Jobs e Historial
+No se ha realizado todavía una publicación pública real como parte de la validación.
 
-Cada operación de publicación conserva trazabilidad de publicación, render exacto, canal, organización, acción, estado, ID externo, URL externa, fechas y error saneado cuando aplica.
+## Reconciliación de estados Buffer — AG-009
 
-`/history` se deriva de `publications`, `renders` y `publishing_jobs`; no existe una tabla de historial redundante.
+La V1 aplica **reconciliación bajo demanda**.
+
+Flujo:
+
+```text
+abrir Historial
+      ↓
+localizar publishing_jobs reconciliables
+      ↓
+consultar Buffer por external_id
+      ↓
+actualizar estado remoto y local
+      ↓
+actualizar Publication si termina en sent/error
+```
+
+Se añadió también **Actualizar estado** para forzar manualmente la comprobación.
+
+El adaptador consulta el post de Buffer por ID y recupera:
+
+- `status`;
+- `dueAt`;
+- `sentAt`;
+- `externalLink`;
+- `updatedAt`.
+
+El estado remoto se conserva en `provider_payload.bufferStatus`.
+
+Mapeo local:
+
+```text
+scheduled       → scheduled
+sending         → pending
+needs_approval  → pending
+sent            → published
+error           → failed
+```
+
+La reconciliación es solo de lectura respecto a Buffer: **no puede publicar, reprogramar ni borrar contenido**.
+
+No se introduce Vercel Cron en V1.
+
+## Historial
+
+`/history` deriva la información de:
+
+- `publications`;
+- `renders`;
+- `publishing_jobs`.
+
+Conserva:
+
+- publicación y tema;
+- render exacto;
+- diseño;
+- acción;
+- estado local;
+- estado Buffer en payload;
+- programación;
+- ID y URL externa;
+- fechas;
+- errores saneados;
+- cancelación de drafts.
+
+## Política de Storage
+
+Documentada en:
+
+`docs/operations/STORAGE_RETENTION_POLICY.md`
+
+Criterio V1:
+
+- no borrar automáticamente archivos;
+- conservar indefinidamente el historial y datos ligeros;
+- conservar configuración necesaria para reconstrucción;
+- estudiar limpieza manual/asistida al acercarse aproximadamente al 70–80 % de la cuota;
+- considerar una retención futura de 90–180 días solo si el volumen real lo justifica.
 
 ## Primera validación end-to-end
 
@@ -335,19 +303,44 @@ Render PNG final ✅
 Buffer conectado ✅
 LinkedIn detectado ✅
 Draft real en Buffer ✅
-Publicación pública en LinkedIn ⏳
+Programación real ⏳
+Publicación pública LinkedIn ⏳
 ```
 
-## Calidad y despliegue
+## Calidad
 
-El workflow `Quality` ejecuta instalación, ESLint, TypeScript y build de Next.js.
+GitHub Actions ejecuta:
 
-La implementación de AG-008 y la cobertura completa de los 12 arquetipos V1 han superado el workflow de calidad. El último cambio de protección frente a renders obsoletos por cambio de asset también ha superado lint, typecheck y build y está desplegado correctamente en Vercel Production.
+- instalación;
+- ESLint;
+- TypeScript;
+- build Next.js.
 
-## Próximo gate de arquitectura
+CI actúa como gate técnico antes de considerar estable cada tanda.
 
-La siguiente frontera estructural es la **reconciliación de estados asíncronos de Buffer**.
+## Documentación de uso y cierre
 
-Un `publishing_job` puede quedar localmente en un estado intermedio mientras Buffer avanza posteriormente hasta un estado terminal. Antes de automatizar esa sincronización debe decidirse si V1 actualiza estados solo cuando el usuario abre la aplicación, mediante comprobaciones periódicas en segundo plano o mediante otra estrategia soportada por la API.
+Guía de usuario:
 
-Esta decisión debe registrarse en un nuevo gate antes de implementar sincronización automática.
+`docs/product/USER_GUIDE_V1.md`
+
+Checklist de release:
+
+`docs/development/V1_RELEASE_CHECKLIST.md`
+
+## Estado de V1
+
+**Código: Release Candidate.**
+
+Pendientes de aceptación manual:
+
+1. programar deliberadamente una publicación de prueba;
+2. comprobar que Historial reconcilia el estado después de la hora de publicación;
+3. verificar el post real en LinkedIn;
+4. marcar la V1 como validada.
+
+Estas acciones no se ejecutan automáticamente porque producen efectos públicos reales.
+
+## Después de V1
+
+El roadmap reserva para etapas posteriores el Suggestion Engine, analítica editorial, nuevas fuentes y más canales. Ninguna de esas capacidades se implementará por anticipación sin el gate de arquitectura correspondiente.
