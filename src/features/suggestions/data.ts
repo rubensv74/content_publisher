@@ -49,6 +49,16 @@ type SignalRow = {
   title: string;
 };
 
+export type SuggestionRecommendation = {
+  id: string;
+  storyType: StoryTypeKey;
+  format: PublicationFormat;
+  designFamily: DesignFamilyKey;
+  archetypeKey: string;
+  status: SuggestionStatus;
+  convertedIdeaId: string | null;
+};
+
 export async function getSuggestions(): Promise<SuggestionRecord[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -141,4 +151,35 @@ export async function getSuggestions(): Promise<SuggestionRecord[]> {
       updatedAt: row.updated_at,
     };
   });
+}
+
+export async function getSuggestionRecommendation(
+  suggestionId: string,
+): Promise<SuggestionRecommendation | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("suggestions")
+    .select(
+      "id,story_type,format,design_family,archetype_key,status,converted_idea_id",
+    )
+    .eq("id", suggestionId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`No se pudo cargar la recomendación de la sugerencia: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    id: data.id as string,
+    storyType: data.story_type as StoryTypeKey,
+    format: data.format as PublicationFormat,
+    designFamily: data.design_family as DesignFamilyKey,
+    archetypeKey: data.archetype_key as string,
+    status: data.status as SuggestionStatus,
+    convertedIdeaId: data.converted_idea_id as string | null,
+  };
 }
