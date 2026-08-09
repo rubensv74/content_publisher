@@ -17,41 +17,66 @@ Evitar decisiones técnicas importantes implícitas. El desarrollo puede continu
 - **AG-009, opción A** — reconciliación Buffer bajo demanda. `ADR-012_BUFFER_STATUS_RECONCILIATION_ON_DEMAND.md`.
 - **AG-010, opción C** — adaptadores de fuentes + memoria ligera `source_signals`. `ADR-013_SUGGESTION_SOURCE_SIGNALS.md`.
 - **AG-011, opción A** — fine-grained PAT GitHub read-only, repo-scoped, server-side y allowlist adicional. `ADR-014_GITHUB_FINE_GRAINED_PAT_SOURCE_READER.md`.
-- **AG-012, opción B** — OpenAI como primer motor detrás del contrato propio `SuggestionModel`, Responses API, Structured Outputs y revisión humana. `ADR-015_SUGGESTION_ENGINE_OPENAI_ADAPTER.md`.
+- **AG-012, opción B** — OpenAI como primer motor detrás de `SuggestionModel`, Responses API, Structured Outputs y revisión humana. `ADR-015_SUGGESTION_ENGINE_OPENAI_ADAPTER.md`.
+- **AG-013, opción B** — `suggestions` persistentes + `suggestion_source_signals`, ciclo `new → accepted → converted` o `dismissed`, con conversión explícita a Idea. `ADR-016_SUGGESTION_PERSISTENCE_AND_LIFECYCLE.md`.
 
-## Consecuencias derivadas de AG-012
+## Suggestion Engine implementado hasta AG-013
 
-- proveedor encapsulado detrás de `SuggestionModel`;
-- modelo concreto configurable;
-- credencial exclusivamente server-side;
-- requests sin estado remoto persistente solicitado;
-- contexto inicial limitado a señales normalizadas;
-- salida JSON Schema estricta;
-- validación de referencias contra señales realmente enviadas;
-- límite inicial de 20 señales y 5 propuestas por ejecución;
+```text
+Fuente original
+      ↓
+Source Adapter
+      ↓
+source_signals
+      ↓
+prefiltro determinista
+      ↓
+SuggestionModel
+      ↓
+suggestions
+      ↓
+revisión humana
+      ↓
+Idea
+```
+
+Consecuencias ya implementadas:
+
+- hasta 20 señales por ejecución;
+- hasta 5 propuestas;
+- Structured Outputs;
+- persistencia y deduplicación por fingerprint;
+- relación relacional con señales fuente;
+- RLS por usuario;
+- estados `new`, `accepted`, `dismissed`, `converted`;
+- conversión humana explícita a Idea;
 - ninguna publicación automática.
 
-## AG-013 — Persistencia y ciclo de vida de Suggestions
+## AG-014 — Enriquecimiento de contexto para Suggestion Engine
 
 **Estado: Abierto — pendiente de decisión.**
 
-Ahora debe decidirse si `Suggestion` será un resultado temporal o una entidad persistente distinta de `Idea`.
+La primera implementación entrega al modelo únicamente `source_signals` ligeras. Para GitHub, muchas señales contienen poco más que el mensaje de un commit, lo que puede ser insuficiente para detectar el aprendizaje técnico real detrás del cambio.
+
+Debe decidirse si el motor continúa solo con esa memoria ligera o recupera contexto adicional de la fuente antes de generar propuestas.
 
 Alternativas:
 
-- **A** — Suggestions efímeras;
-- **B** — `suggestions` + relación `suggestion_source_signals` **(recomendada)**;
-- **C** — guardar directamente las propuestas como Ideas.
+- **A** — usar exclusivamente las señales ligeras ya persistidas;
+- **B** — `SourceContextResolver` bajo demanda, acotado, sanitizado y no persistente **(recomendada)**;
+- **C** — índice persistente/RAG semántico con contenido fragmentado y embeddings.
 
 Propuesta completa:
 
-`docs/architecture/proposals/AG-013_SUGGESTION_PERSISTENCE_AND_LIFECYCLE.md`
+`docs/architecture/proposals/AG-014_SUGGESTION_CONTEXT_ENRICHMENT.md`
 
-La implementación se detiene antes de crear las tablas o activar generación real en la interfaz.
+La opción B mantendría GitHub/Knowledge Base como fuentes de verdad y recuperaría únicamente pequeños fragmentos o metadatos para las señales seleccionadas, con límites explícitos de privacidad y coste.
 
 ## Estado global
 
-**Existe un gate abierto: AG-013.**
+**Existe un gate abierto: AG-014.**
+
+La persistencia y UI de Suggestions pueden operar con señales ligeras. El desarrollo autónomo se detiene antes de introducir recuperación profunda de contenido de repositorios o un índice semántico persistente.
 
 ## Regla
 
