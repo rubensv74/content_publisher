@@ -39,9 +39,17 @@ export async function generateSuggestionsAction(_formData: FormData) {
   revalidatePath("/suggestions");
   revalidatePath("/signals");
 
-  redirect(
-    `/suggestions?generated=${result.generated}&signals=${result.observedSignals}`,
-  );
+  const params = new URLSearchParams({
+    generated: String(result.generated),
+    signals: String(result.observedSignals),
+    refreshed: String(result.refreshedSignals),
+  });
+
+  if (result.externalRefreshWarning) {
+    params.set("externalWarning", "1");
+  }
+
+  redirect(`/suggestions?${params.toString()}`);
 }
 
 export async function acceptSuggestionAction(formData: FormData) {

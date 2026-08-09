@@ -6,7 +6,7 @@ Fecha: 2026-08-09
 
 Configurar las llamadas server-side de Suggestion Engine sin exponer secretos y sin fijar en código un modelo concreto.
 
-Esta guía deriva de `ADR-015_SUGGESTION_ENGINE_OPENAI_ADAPTER.md` y `ADR-016_SUGGESTION_PERSISTENCE_AND_LIFECYCLE.md`.
+Esta guía deriva de `ADR-015_SUGGESTION_ENGINE_OPENAI_ADAPTER.md` y de la cadencia bajo demanda definida en `ADR-018_SUGGESTION_GENERATION_ON_DEMAND.md`.
 
 ## Variables necesarias
 
@@ -52,54 +52,64 @@ En el proyecto `content-publisher`:
 
 El modelo se mantiene fuera del código para poder cambiar coste/calidad sin modificar arquitectura.
 
-## 4. Política de llamadas
+## 4. Cadencia V1
 
-Suggestion Engine aplica estas protecciones:
+Suggestion Engine no se ejecuta automáticamente.
 
 ```text
-source_signals
+Generar sugerencias
+      ↓
+refresco de fuentes
       ↓
 prefiltro
       ↓
-máximo 20 señales
+hasta 6 señales enriquecidas
       ↓
 OpenAI
       ↓
-máximo 5 propuestas estructuradas
-      ↓
-suggestions
-      ↓
-revisión humana
+hasta 5 Suggestions
 ```
 
-Además:
+No existen cron jobs ni webhooks de generación. Cada consumo de OpenAI requiere una acción explícita en la interfaz.
 
-- solo se envían campos normalizados de las señales;
-- no se envía `metadata` arbitraria en la primera implementación;
+## 5. Política de llamadas
+
+Protecciones activas:
+
+- hasta 20 señales ligeras por ejecución;
+- hasta 6 señales enriquecidas;
 - no se envían repositorios completos;
-- se usa Responses API con Structured Outputs;
-- el request utiliza `store: false`;
-- la respuesta se valida contra IDs de señales realmente enviados;
-- las propuestas quedan persistidas y nunca entran directamente en Ideas.
+- contexto profundo limitado y efímero;
+- código fuente bruto no enviado por defecto;
+- rutas sensibles excluidas;
+- redacción defensiva de patrones de credenciales;
+- Responses API con Structured Outputs;
+- request con `store: false`;
+- respuesta validada contra IDs de señales realmente enviadas;
+- hasta 5 propuestas por ejecución.
 
 Sobre `store: false` y controles de datos:
 
 https://platform.openai.com/docs/models/default-usage-policies-by-endpoint
 
-## 5. Validación prevista
+## 6. Validación prevista
 
-La UI de `/suggestions` ya está preparada. Cuando las variables estén configuradas:
+Cuando las variables estén configuradas:
 
-1. refrescar las señales disponibles;
-2. generar un lote pequeño de propuestas;
-3. comprobar que no inventan datos;
-4. comprobar que cada propuesta referencia señales existentes;
-5. revisar coste/uso en la plataforma API;
-6. aceptar una propuesta;
-7. convertirla explícitamente en Idea y verificar la trazabilidad;
-8. descartar otra y confirmar que permanece registrada como descartada.
+1. abrir `/suggestions`;
+2. comprobar que Motor IA aparece como `Configurado`;
+3. pulsar `Generar sugerencias` una sola vez;
+4. verificar el resumen de señales refrescadas, analizadas y propuestas generadas;
+5. comprobar que las Suggestions no inventan hechos;
+6. comprobar que cada propuesta referencia señales existentes;
+7. aceptar una propuesta;
+8. convertirla en Idea y comprobar la trazabilidad;
+9. descartar otra y verificar que conserva su estado;
+10. revisar el uso/coste en la plataforma de OpenAI.
 
-## 6. Rotación
+La política de telemetría histórica dentro de Content Publisher está pendiente de AG-016.
+
+## 7. Rotación
 
 La clave debe poder rotarse sin cambios de código:
 
@@ -113,4 +123,4 @@ No documentar nunca el valor de la clave; solo su fecha de creación/rotación s
 
 ## Estado actual
 
-AG-013 está cerrado y la persistencia/UI de Suggestions está implementada. Las llamadas reales permanecen inactivas únicamente mientras `OPENAI_API_KEY` y `OPENAI_SUGGESTION_MODEL` no estén configuradas en el entorno del servidor.
+La integración de código, persistencia, revisión humana, contexto efímero y ejecución bajo demanda están implementadas. Las llamadas reales permanecen inactivas mientras no existan `OPENAI_API_KEY` y `OPENAI_SUGGESTION_MODEL` en el entorno del servidor.

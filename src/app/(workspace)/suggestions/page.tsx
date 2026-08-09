@@ -41,15 +41,35 @@ function statusClass(status: SuggestionStatus) {
   return "bg-amber-50 text-amber-800";
 }
 
-export default async function SuggestionsPage() {
-  const [suggestions, signals] = await Promise.all([
+type SuggestionsPageProps = {
+  searchParams: Promise<{
+    generated?: string;
+    signals?: string;
+    refreshed?: string;
+    externalWarning?: string;
+  }>;
+};
+
+function safeCount(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+export default async function SuggestionsPage({ searchParams }: SuggestionsPageProps) {
+  const [suggestions, signals, params] = await Promise.all([
     getSuggestions(),
     getSourceSignals(),
+    searchParams,
   ]);
   const availableSignals = selectSignalsForSuggestionModel(signals);
   const configured = isOpenAISuggestionConfigured();
   const pending = suggestions.filter((suggestion) => suggestion.status === "new").length;
   const accepted = suggestions.filter((suggestion) => suggestion.status === "accepted").length;
+  const generationWasRequested = typeof params.generated === "string";
+  const generated = safeCount(params.generated);
+  const analyzedSignals = safeCount(params.signals);
+  const refreshedSignals = safeCount(params.refreshed);
+  const externalRefreshWarning = params.externalWarning === "1";
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -64,10 +84,10 @@ export default async function SuggestionsPage() {
           </p>
         </div>
 
-        {configured && availableSignals.length > 0 ? (
+        {configured ? (
           <form action={generateSuggestionsAction}>
             <SubmitButton
-              pendingLabel="Analizando señales…"
+              pendingLabel="Refrescando y analizando…"
               className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
             >
               Generar sugerencias
@@ -84,11 +104,25 @@ export default async function SuggestionsPage() {
         )}
       </header>
 
+      {generationWasRequested ? (
+        <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 text-sm leading-6 text-emerald-950">
+          <p className="font-semibold">Análisis bajo demanda completado.</p>
+          <p className="mt-1">
+            Se refrescaron {refreshedSignals} señales, se analizaron {analyzedSignals} señales elegibles y se generaron {generated} propuestas.
+          </p>
+          {externalRefreshWarning ? (
+            <p className="mt-2 text-amber-900">
+              La lectura externa de GitHub no pudo refrescarse en esta ejecución. El motor continuó de forma segura con las señales ya disponibles.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
       <section className="mb-6 grid gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-[var(--border)] bg-white p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Disponibles</p>
           <p className="mt-2 text-3xl font-semibold">{availableSignals.length}</p>
-          <p className="mt-1 text-sm text-[var(--muted)]">señales listas para analizar</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">señales pendientes ya conocidas</p>
         </div>
         <div className="rounded-2xl border border-[var(--border)] bg-white p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Pendientes</p>
@@ -105,7 +139,7 @@ export default async function SuggestionsPage() {
           <p className="mt-2 text-lg font-semibold">{configured ? "Configurado" : "Pendiente de credencial"}</p>
           <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
             {configured
-              ? "Las ejecuciones son manuales y usan únicamente señales prefiltradas."
+              ? "Cada ejecución es manual: primero refresca las fuentes y después analiza únicamente las señales elegibles."
               : "El código está preparado. Falta configurar OPENAI_API_KEY y OPENAI_SUGGESTION_MODEL en Vercel."}
           </p>
         </div>
@@ -121,10 +155,10 @@ export default async function SuggestionsPage() {
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
           <h2 className="text-lg font-semibold">Todavía no hay sugerencias</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[var(--muted)]">
-            Refresca primero las señales y, cuando el motor esté configurado, genera un lote pequeño de propuestas. Las sugerencias quedarán guardadas para revisarlas con calma.
+            Cuando el motor esté configurado, pulsa Generar sugerencias. La misma acción refrescará las fuentes y analizará un lote pequeño bajo demanda.
           </p>
           <Link href="/signals" className="mt-4 inline-block text-sm font-semibold text-slate-900 underline underline-offset-4">
-            Ir a Señales
+            Ver señales
           </Link>
         </section>
       ) : (

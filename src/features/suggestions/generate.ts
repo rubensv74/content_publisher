@@ -3,9 +3,12 @@ import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 
 import { getSourceSignals } from "@/features/source-signals/data";
+import {
+  refreshExternalSourceSignals,
+  refreshLocalSourceSignals,
+} from "@/features/source-signals/refresh";
 import { createClient } from "@/lib/supabase/server";
 
-import { enrichSuggestionSignals } from "./context";
 import {
   MAX_SIGNALS_PER_SUGGESTION_RUN,
   MAX_SUGGESTIONS_PER_RUN,
@@ -40,35 +43,45 @@ export async function generateAndPersistSuggestions() {
     redirect("/login");
   }
 
+  const localRefresh = await refreshLocalSourceSignals();
+  let externalRefreshPersisted = 0;
+  let externalRefreshWarning = false;
+
+  try {
+    const externalRefresh = await refreshExternalSourceSignals();
+    externalRefreshPersisted = externalRefresh.persisted;
+  } catch {
+    externalRefreshWarning = true;
+  }
+
+  const refreshedSignals = localRefresh.persisted + externalRefreshPersisted;
   const allSignals = await getSourceSignals();
-  const selectedSignals = selectSignalsForSuggestionModel(allSignals).slice(
-    0,
-    MAX_SIGNALS_PER_SUGGESTION_RUN,
-  );
+  const selectedSignals = selectSignalsForSuggestionModel(allSignals);
 
   if (selectedSignals.length === 0) {
     return {
       observedSignals: 0,
-      enrichedSignals: 0,
       generated: 0,
       persisted: 0,
+      refreshedSignals,
+      externalRefreshWarning,
       provider: null,
       model: null,
     };
   }
 
-  const contextResolution = await enrichSuggestionSignals(selectedSignals);
   const result = await suggestionModel.generate({
-    signals: contextResolution.signals,
+    signals: selectedSignals.slice(0, MAX_SIGNALS_PER_SUGGESTION_RUN),
     maxSuggestions: MAX_SUGGESTIONS_PER_RUN,
   });
 
   if (result.suggestions.length === 0) {
     return {
       observedSignals: selectedSignals.length,
-      enrichedSignals: contextResolution.enrichedCount,
       generated: 0,
       persisted: 0,
+      refreshedSignals,
+      externalRefreshWarning,
       provider: result.provider,
       model: result.model,
     };
@@ -157,9 +170,10 @@ export async function generateAndPersistSuggestions() {
 
   return {
     observedSignals: selectedSignals.length,
-    enrichedSignals: contextResolution.enrichedCount,
     generated: result.suggestions.length,
     persisted: suggestionIdByFingerprint.size,
+    refreshedSignals,
+    externalRefreshWarning,
     provider: result.provider,
     model: result.model,
   };

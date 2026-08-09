@@ -20,13 +20,14 @@ Evitar decisiones técnicas importantes implícitas. El desarrollo puede continu
 - **AG-012, opción B** — OpenAI como primer motor detrás de `SuggestionModel`, Responses API, Structured Outputs y revisión humana. `ADR-015_SUGGESTION_ENGINE_OPENAI_ADAPTER.md`.
 - **AG-013, opción B** — `suggestions` persistentes + `suggestion_source_signals`, ciclo `new → accepted → converted` o `dismissed`, con conversión explícita a Idea. `ADR-016_SUGGESTION_PERSISTENCE_AND_LIFECYCLE.md`.
 - **AG-014, opción B** — `SourceContextResolver` bajo demanda, acotado, sanitizado y no persistente. `ADR-017_SUGGESTION_EPHEMERAL_CONTEXT_RESOLVER.md`.
+- **AG-015, opción A** — generación de Suggestions exclusivamente bajo demanda durante V1. `ADR-018_SUGGESTION_GENERATION_ON_DEMAND.md`.
 
-## Suggestion Engine implementado hasta AG-014
+## Suggestion Engine implementado hasta AG-015
 
 ```text
-Fuente original
+acción explícita del usuario
       ↓
-Source Adapter
+refresco de fuentes
       ↓
 source_signals
       ↓
@@ -47,6 +48,9 @@ Idea
 
 Consecuencias ya implementadas:
 
+- ejecución exclusivamente manual/on-demand;
+- refresco de fuentes integrado en la acción de generación;
+- degradación segura a señales disponibles si falla el refresco externo;
 - hasta 20 señales por ejecución;
 - hasta 6 señales enriquecidas;
 - hasta 5 propuestas;
@@ -59,31 +63,32 @@ Consecuencias ya implementadas:
 - RLS por usuario;
 - estados `new`, `accepted`, `dismissed`, `converted`;
 - conversión humana explícita a Idea;
-- ninguna publicación automática.
+- ninguna publicación automática;
+- ningún cron, worker recurrente o webhook de generación.
 
-## AG-015 — Cadencia de generación de Suggestions
+## AG-016 — Observabilidad y control de coste de Suggestion Engine
 
 **Estado: Abierto — pendiente de decisión.**
 
-La generación funciona actualmente bajo demanda. Debe decidirse si V1 mantiene ese comportamiento o incorpora ejecución automática.
+OpenAI devuelve información de uso por llamada, pero Content Publisher todavía no ha decidido si esa telemetría debe conservarse para analizar consumo y comportamiento del motor.
 
 Alternativas:
 
-- **A** — generación exclusivamente bajo demanda **(recomendada para V1)**;
-- **B** — generación periódica programada;
-- **C** — generación event-driven mediante eventos/webhooks de las fuentes.
+- **A** — control monetario en proveedor + feedback de uso solo para la ejecución actual;
+- **B** — entidad ligera `ai_runs` con tokens, modelo, estado y métricas técnicas; presupuesto monetario real en proveedor **(recomendada)**;
+- **C** — cálculo y bloqueo de presupuesto monetario dentro de Content Publisher.
 
 Propuesta completa:
 
-`docs/architecture/proposals/AG-015_SUGGESTION_GENERATION_CADENCE.md`
+`docs/architecture/proposals/AG-016_AI_USAGE_OBSERVABILITY_AND_COST_CONTROL.md`
 
-La implementación de cron, workers, webhooks o generación automática queda detenida en este gate.
+La implementación de persistencia de telemetría o presupuesto interno queda detenida en este gate.
 
 ## Estado global
 
-**Existe un gate abierto: AG-015.**
+**Existe un gate abierto: AG-016.**
 
-La generación manual puede seguir utilizando toda la arquitectura aprobada hasta AG-014.
+Suggestion Engine puede seguir funcionando bajo demanda con toda la arquitectura aprobada hasta AG-015.
 
 ## Regla
 
