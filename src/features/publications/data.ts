@@ -11,6 +11,7 @@ const publicationSelect = [
   "format",
   "status",
   "structured_content",
+  "visual_config",
   "content_schema_version",
   "linkedin_text",
   "archetype_key",
