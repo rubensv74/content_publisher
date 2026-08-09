@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import { getArchetypeDefinition } from "@/publication-renderer/archetypes/registry";
 import type { RenderablePublication } from "@/publication-renderer/contracts";
 import type { FinalRenderPayload } from "@/publication-renderer/export/final-render";
 import { BoldStatementPreview } from "@/publication-renderer/preview/bold-statement-preview";
@@ -21,6 +22,11 @@ export function PersistedPublicationPreview({
   canPersist: boolean;
 }) {
   const router = useRouter();
+  const definition = getArchetypeDefinition(publication.archetypeKey);
+  const requiredAssetRoles = definition?.requiredAssetRoles ?? [];
+  const hasRequiredAssets = requiredAssetRoles.every((role) =>
+    publication.assets.some((asset) => asset.role === role),
+  );
 
   async function persist(payload: FinalRenderPayload) {
     const result = await persistFinalRender(publication, payload);
@@ -28,7 +34,7 @@ export function PersistedPublicationPreview({
     return result;
   }
 
-  const persistenceHandler = canPersist ? persist : undefined;
+  const persistenceHandler = canPersist && hasRequiredAssets ? persist : undefined;
 
   if (publication.archetypeKey === "bold-statement") {
     return (
