@@ -24,12 +24,15 @@ export type PublicationAsset = {
   metadata?: Record<string, unknown>;
 };
 
+export type VisualConfig = Record<string, Record<string, unknown>>;
+
 export type RenderablePublication = {
   id: string;
   title: string;
   storyType: StoryTypeKey;
   format: PublicationFormat;
   structuredContent: StructuredContent;
+  visualConfig: VisualConfig;
   contentSchemaVersion: number;
   archetypeKey: string;
   archetypeVersion: number;
