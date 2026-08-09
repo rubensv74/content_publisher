@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DeleteDraftButton } from "@/features/publishing/delete-draft-button";
 import { getPublishingHistory } from "@/features/publishing/history";
 
 function actionLabel(action: string) {
@@ -7,6 +8,16 @@ function actionLabel(action: string) {
   if (action === "schedule") return "Programada";
   if (action === "draft") return "Draft en Buffer";
   return action;
+}
+
+function statusLabel(action: string, status: string) {
+  if (action === "draft" && status === "sent") return "Draft creado";
+  if (action === "draft" && status === "cancelled") return "Draft eliminado";
+  if (status === "scheduled") return "Programada";
+  if (status === "published") return "Publicada";
+  if (status === "failed") return "Error";
+  if (status === "pending") return "Procesando";
+  return status;
 }
 
 function statusClass(status: string) {
@@ -18,11 +29,18 @@ function statusClass(status: string) {
     return "bg-red-50 text-red-700";
   }
 
+  if (status === "cancelled") {
+    return "bg-slate-100 text-slate-500";
+  }
+
   return "bg-slate-100 text-slate-600";
 }
 
 export default async function HistoryPage() {
   const history = await getPublishingHistory();
+  const activeDrafts = history.filter(
+    (item) => item.action === "draft" && item.status === "sent" && item.externalId,
+  );
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -32,9 +50,18 @@ export default async function HistoryPage() {
         </p>
         <h1 className="text-4xl font-semibold tracking-tight">Historial</h1>
         <p className="mt-4 text-base leading-7 text-[var(--muted)]">
-          Esta vista se deriva de publicaciones, renders y trabajos de publicación. No existe una tabla duplicada de historial.
+          Aquí puedes comprobar qué se envió a Buffer, qué render se utilizó y el resultado de cada operación.
         </p>
       </header>
+
+      {activeDrafts.length > 1 ? (
+        <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
+          <p className="font-semibold">Hay {activeDrafts.length} drafts activos en Buffer.</p>
+          <p className="mt-1">
+            Durante la prueba se generaron varios borradores al pulsar el botón repetidamente. Puedes conservar uno y eliminar los demás desde este historial sin publicar nada en LinkedIn.
+          </p>
+        </section>
+      ) : null}
 
       {history.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
@@ -71,7 +98,7 @@ export default async function HistoryPage() {
                   </p>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass(item.status)}`}>
-                  {item.status}
+                  {statusLabel(item.action, item.status)}
                 </span>
               </div>
 
@@ -123,6 +150,10 @@ export default async function HistoryPage() {
                 >
                   Abrir publicación externa ↗
                 </a>
+              ) : null}
+
+              {item.action === "draft" && item.status === "sent" && item.externalId ? (
+                <DeleteDraftButton jobId={item.id} />
               ) : null}
             </article>
           ))}
