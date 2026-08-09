@@ -7,7 +7,9 @@ import { storyTypes } from "@/config/story-types";
 import { getVisualAssets } from "@/features/assets/data";
 import { getIdentitySnapshot } from "@/features/identity/data";
 import {
+  removePublicationAssetRole,
   removePublicationHeroAsset,
+  setPublicationAssetRole,
   setPublicationHeroAsset,
 } from "@/features/publication-assets/actions";
 import { getPublicationAssets } from "@/features/publication-assets/data";
@@ -19,6 +21,11 @@ import { getPublication } from "@/features/publications/data";
 import { getPublishableRenders } from "@/features/publishing/data";
 import { PublishingPanel } from "@/features/publishing/publishing-panel";
 import { PersistedPublicationPreview } from "@/features/renders/persisted-publication-preview";
+import {
+  isVisualConfigReady,
+  visualConfigRequirementLabel,
+} from "@/features/visual-config/config";
+import { VisualConfigEditor } from "@/features/visual-config/visual-config-editor";
 import { getBufferConnectionStatus } from "@/lib/publishing/buffer/account";
 import { publicationArchetypes } from "@/publication-renderer/archetypes/registry";
 import type { RenderablePublication } from "@/publication-renderer/contracts";
@@ -57,6 +64,7 @@ export default async function PublicationStudioPage({
     storyTypes.find((story) => story.key === publication.story_type)?.label ??
     publication.story_type;
   const story = publication.structured_content ?? {};
+  const visualConfig = publication.visual_config ?? {};
 
   const compatibleDesigns = publicationArchetypes.filter((design) => {
     const supportsFormat = design.supportedFormats.includes(publication.format);
@@ -102,8 +110,16 @@ export default async function PublicationStudioPage({
     publication.archetype_version === previewDesign.version &&
     publication.variant_key === previewVariant;
   const heroAsset = linkedAssets.find((asset) => asset.role === "hero") ?? null;
-  const designNeedsHeroAsset = previewDesign.key === "hero-screenshot";
-  const canPersistFinalRender = designSelected && (!designNeedsHeroAsset || Boolean(heroAsset));
+  const beforeAsset = linkedAssets.find((asset) => asset.role === "before") ?? null;
+  const afterAsset = linkedAssets.find((asset) => asset.role === "after") ?? null;
+  const requiredAssetRoles = previewDesign.requiredAssetRoles ?? [];
+  const missingAssetRoles = requiredAssetRoles.filter(
+    (role) => !linkedAssets.some((asset) => asset.role === role),
+  );
+  const assetsReady = missingAssetRoles.length === 0;
+  const visualConfigReady = isVisualConfigReady(previewDesign.key, visualConfig);
+  const visualRequirement = visualConfigRequirementLabel(previewDesign.key);
+  const canPersistFinalRender = designSelected && assetsReady && visualConfigReady;
   const designFamily = designFamilies.find((family) => family.key === previewDesign.family);
 
   const currentPublishableRenders = publishableRenders.filter((render) => {
@@ -125,6 +141,7 @@ export default async function PublicationStudioPage({
     storyType: publication.story_type,
     format: publication.format,
     structuredContent: story,
+    visualConfig,
     contentSchemaVersion: publication.content_schema_version,
     archetypeKey: previewDesign.key,
     archetypeVersion: previewDesign.version,
@@ -171,6 +188,15 @@ export default async function PublicationStudioPage({
           role="status"
         >
           Diseño seleccionado correctamente. Genera un render final nuevo antes de publicar.
+        </div>
+      ) : null}
+
+      {query.saved === "visual" ? (
+        <div
+          className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+          role="status"
+        >
+          Configuración visual guardada. El preview utiliza ya estos parámetros.
         </div>
       ) : null}
 
@@ -301,16 +327,22 @@ export default async function PublicationStudioPage({
               </p>
             ) : null}
 
-            {designNeedsHeroAsset && !heroAsset ? (
+            {!assetsReady ? (
               <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
-                Hero Screenshot necesita un screenshot. Súbelo en Recursos y asígnalo desde el panel derecho.
+                Este diseño necesita los recursos: {missingAssetRoles.join(", ")}. Asócialos desde el panel derecho antes de crear el render final.
+              </p>
+            ) : null}
+
+            {!visualConfigReady && visualRequirement ? (
+              <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                {visualRequirement} Guarda la configuración específica desde el panel derecho.
               </p>
             ) : null}
           </section>
 
           <div className="flex flex-wrap items-center justify-end gap-4">
             <p className="text-xs text-[var(--muted)]">
-              Este botón guarda historia y caption. Diseño y recursos se gestionan en el panel derecho.
+              Este botón guarda historia y caption. Diseño, configuración visual y recursos se gestionan por separado.
             </p>
             <SubmitButton
               pendingLabel="Guardando…"
@@ -348,7 +380,9 @@ export default async function PublicationStudioPage({
               {compatibleDesigns.map((design) => {
                 const isPreview = design.key === previewDesign.key;
                 const isSaved = design.key === savedDesign?.key;
-                const needsAsset = design.key === "hero-screenshot" && !heroAsset;
+                const missingForDesign = (design.requiredAssetRoles ?? []).filter(
+                  (role) => !linkedAssets.some((asset) => asset.role === role),
+                );
 
                 return (
                   <Link
@@ -373,8 +407,10 @@ export default async function PublicationStudioPage({
                         </span>
                       ) : null}
                     </div>
-                    {needsAsset ? (
-                      <p className="mt-2 text-xs font-medium text-amber-700">Necesita screenshot</p>
+                    {missingForDesign.length > 0 ? (
+                      <p className="mt-2 text-xs font-medium text-amber-700">
+                        Necesita: {missingForDesign.join(", ")}
+                      </p>
                     ) : null}
                   </Link>
                 );
@@ -404,6 +440,12 @@ export default async function PublicationStudioPage({
               </p>
             )}
           </section>
+
+          <VisualConfigEditor
+            publicationId={publication.id}
+            archetypeKey={previewDesign.key}
+            visualConfig={visualConfig}
+          />
 
           <section className="rounded-2xl border border-[var(--border)] bg-white p-5">
             <div className="flex items-center justify-between gap-3">
@@ -464,11 +506,74 @@ export default async function PublicationStudioPage({
                   pendingLabel="Retirando…"
                   className="w-full rounded-xl px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
                 >
-                  Retirar de esta publicación
+                  Retirar recurso principal
                 </SubmitButton>
               </form>
             ) : null}
           </section>
+
+          {previewDesign.key === "before-after" ? (
+            <section className="rounded-2xl border border-[var(--border)] bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Before / After
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                Asigna una imagen a cada estado. Los originales permanecen en el bucket privado.
+              </p>
+
+              {(["before", "after"] as const).map((role) => {
+                const assigned = role === "before" ? beforeAsset : afterAsset;
+                return (
+                  <div key={role} className="mt-4 rounded-xl border border-[var(--border)] p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      {role === "before" ? "Antes" : "Después"}
+                    </p>
+                    {assigned ? (
+                      <p className="mt-2 truncate text-sm font-semibold">{assigned.alt ?? assigned.id}</p>
+                    ) : (
+                      <p className="mt-2 text-sm text-[var(--muted)]">Sin recurso asignado</p>
+                    )}
+                    {availableAssets.length > 0 ? (
+                      <form action={setPublicationAssetRole} className="mt-3 space-y-2">
+                        <input type="hidden" name="publicationId" value={publication.id} />
+                        <input type="hidden" name="role" value={role} />
+                        <select
+                          name="assetId"
+                          required
+                          defaultValue={assigned?.id ?? availableAssets[0]?.id}
+                          className="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+                        >
+                          {availableAssets.map((asset) => (
+                            <option key={asset.id} value={asset.id}>
+                              {asset.original_filename}
+                            </option>
+                          ))}
+                        </select>
+                        <SubmitButton
+                          pendingLabel="Asociando…"
+                          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50"
+                        >
+                          {assigned ? "Cambiar" : "Asignar"}
+                        </SubmitButton>
+                      </form>
+                    ) : null}
+                    {assigned ? (
+                      <form action={removePublicationAssetRole} className="mt-1">
+                        <input type="hidden" name="publicationId" value={publication.id} />
+                        <input type="hidden" name="role" value={role} />
+                        <SubmitButton
+                          pendingLabel="Retirando…"
+                          className="w-full rounded-xl px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                        >
+                          Retirar
+                        </SubmitButton>
+                      </form>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </section>
+          ) : null}
 
           <section className="rounded-2xl border border-[var(--border)] bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -494,7 +599,7 @@ export default async function PublicationStudioPage({
                 Render anterior
               </p>
               <p className="mt-2 text-sm leading-6 text-amber-900/80">
-                Hay {staleRenderCount} render{staleRenderCount === 1 ? "" : "s"} anterior{staleRenderCount === 1 ? "" : "es"}. No se ofrecen para publicar porque el contenido, diseño o recurso cambió después de generarlos.
+                Hay {staleRenderCount} render{staleRenderCount === 1 ? "" : "s"} anterior{staleRenderCount === 1 ? "" : "es"}. No se ofrecen para publicar porque el contenido, diseño, configuración visual o recurso cambió después de generarlos.
               </p>
             </section>
           ) : null}
