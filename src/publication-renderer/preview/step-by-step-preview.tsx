@@ -39,6 +39,7 @@ export function StepByStepPreview({
   const [error, setError] = useState<string | null>(null);
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
   const slides = buildStepByStepSlides(publication);
+  const renderBlocked = !persistFinalRender;
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -163,19 +164,29 @@ export function StepByStepPreview({
             {isExporting ? "Generando PDF…" : "Exportar PDF"}
           </button>
 
-          {persistFinalRender ? (
-            <button
-              type="button"
-              onClick={saveFinalRender}
-              disabled={isExporting || isPersisting}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
-            >
-              <Globe2 size={16} />
-              {isPersisting ? "Guardando…" : "Crear render final"}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={saveFinalRender}
+            disabled={renderBlocked || isExporting || isPersisting}
+            aria-disabled={renderBlocked || isExporting || isPersisting}
+            title={
+              renderBlocked
+                ? "Completa los requisitos indicados bajo el preview para habilitar el render final."
+                : undefined
+            }
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 disabled:opacity-100"
+          >
+            <Globe2 size={16} />
+            {isPersisting ? "Guardando…" : "Crear render final"}
+          </button>
         </div>
       </div>
+
+      {renderBlocked ? (
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          El render final está bloqueado hasta completar los requisitos indicados bajo el preview.
+        </p>
+      ) : null}
 
       {error ? (
         <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
