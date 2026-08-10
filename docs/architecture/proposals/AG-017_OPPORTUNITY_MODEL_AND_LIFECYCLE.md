@@ -59,9 +59,9 @@ archived
 
 ## Evaluación
 
-OR-03 no dependerá de ninguna API de IA. Las dimensiones se conservarán por separado en escala 1–5: relevancia profesional, accionabilidad, aprendizaje, potencial de proyecto, potencial de caso de estudio, potencial editorial, novedad y esfuerzo.
+OR-03 no depende de ninguna API de IA. Las dimensiones se conservan por separado en escala 1–5: relevancia profesional, accionabilidad, aprendizaje, potencial de proyecto, potencial de caso de estudio, potencial editorial, novedad y esfuerzo.
 
-La prioridad será derivada mediante una regla determinista y visible. No se utilizarán ML, embeddings, vector database ni ranking opaco.
+La prioridad se deriva mediante una regla determinista y visible. No se utilizan ML, embeddings, vector database ni ranking opaco.
 
 ## Reglas de integridad
 
@@ -70,8 +70,8 @@ La prioridad será derivada mediante una regla determinista y visible. No se uti
 3. Una señal puede justificar más de una Opportunity.
 4. Opportunity no crea automáticamente Suggestion ni Idea.
 5. Descartar una Opportunity no borra las señales originales.
-6. RLS debe aislar por usuario tanto entidad como relaciones.
-7. No se almacenarán artículos completos ni contenido duplicado de las fuentes.
+6. RLS aísla por usuario tanto entidad como relaciones.
+7. No se almacenan artículos completos ni contenido duplicado de las fuentes.
 8. Todo el modelo queda subordinado a `ADR-020_ZERO_ADDITIONAL_COST_POLICY.md`.
 
 ## Coste
@@ -80,4 +80,4 @@ La opción aprobada utiliza exclusivamente el Supabase/PostgreSQL ya existente y
 
 ## Cierre
 
-AG-017 queda cerrado. OR-03 puede implementar tablas, migraciones, RLS, módulo `src/features/opportunities`, backlog y acciones de usuario conforme a `ADR-022`.
+AG-017 queda cerrado y OR-03 queda desbloqueado para implementación conforme a `ADR-022`.
