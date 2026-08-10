@@ -7,7 +7,7 @@
 
 ## Decisión
 
-Se aprueba **Opción B — Opportunity como entidad persistente propia + relación many-to-many con Source Signals**.
+El usuario aprueba explícitamente **Opción B — Opportunity como entidad persistente propia + relación many-to-many con Source Signals**.
 
 ```text
 source_signals
