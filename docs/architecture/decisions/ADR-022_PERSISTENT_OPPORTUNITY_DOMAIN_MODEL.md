@@ -9,13 +9,9 @@
 
 Opportunity Radar ya puede registrar señales tecnológicas externas como `source_signals`. El siguiente paso exige separar un hecho observado de una posibilidad profesional que merece evaluación, seguimiento o trabajo.
 
-Una Opportunity puede permanecer activa durante días o semanas, agrupar varias señales, cambiar de prioridad, entrar en investigación, convertirse en candidato a proyecto, iniciar trabajo real y producir posteriormente un caso de estudio.
-
-Por ello no debe ser un cálculo efímero ni reutilizar la entidad editorial `suggestions`.
+Una Opportunity puede permanecer activa durante días o semanas, agrupar varias señales, cambiar de prioridad, entrar en investigación, convertirse en candidato a proyecto, iniciar trabajo real y producir posteriormente un caso de estudio. Por ello no debe ser un cálculo efímero ni reutilizar la entidad editorial `suggestions`.
 
 ## Decisión
-
-Se adopta el siguiente modelo conceptual:
 
 ```text
 source_signals
@@ -33,8 +29,6 @@ suggestion
 idea
 ```
 
-Principios semánticos:
-
 ```text
 Signal      = hecho observado
 Opportunity = posibilidad profesional accionable
@@ -44,7 +38,7 @@ Idea        = decisión humana de crear contenido
 
 ## Persistencia
 
-Se crearán dos tablas:
+Se crean dos entidades persistentes:
 
 - `opportunities`: identidad, estado, evaluación, prioridad explicable, notas y ciclo de vida;
 - `opportunity_source_signals`: relación many-to-many con las señales que justifican una oportunidad.
@@ -52,8 +46,6 @@ Se crearán dos tablas:
 Ambas conservan `user_id` para aislamiento, RLS e integridad entre entidades pertenecientes al mismo usuario.
 
 ## Ciclo de vida
-
-Estados aprobados:
 
 ```text
 new
@@ -66,84 +58,31 @@ dismissed
 archived
 ```
 
-Reglas:
-
-- `new`: pendiente de evaluación;
-- `shortlisted`: merece atención;
-- `researching`: existe investigación real en curso;
-- `project_candidate`: existe una propuesta concreta de experimento/proyecto;
-- `active`: el trabajo ya ha comenzado;
-- `case_study`: existe evidencia suficiente para pasar al futuro dominio de casos de estudio;
-- `dismissed`: descartada explícitamente;
-- `archived`: conservada como histórico sin trabajo activo.
-
 `active` y `case_study` representan hechos reales, no intención.
 
 ## Evaluación y scoring
 
-OR-03 no utilizará API de IA.
+OR-03 no utiliza API de IA. Cada Opportunity conserva dimensiones independientes en escala 1–5: relevancia profesional, accionabilidad, aprendizaje, potencial de proyecto, potencial de caso de estudio, potencial editorial, novedad y esfuerzo.
 
-Cada Opportunity conservará dimensiones independientes, en escala 1–5:
-
-- relevancia profesional;
-- accionabilidad;
-- aprendizaje;
-- potencial de proyecto;
-- potencial de caso de estudio;
-- potencial editorial;
-- novedad;
-- esfuerzo.
-
-La prioridad se derivará mediante una regla determinista y explicable. Las dimensiones se conservan separadas para poder cambiar pesos en el futuro sin perder la evaluación original.
-
-No se usarán embeddings, ML, vector database ni ranking opaco.
+La prioridad se deriva mediante una regla determinista y explicable. No se usan embeddings, ML, vector database ni ranking opaco.
 
 ## Integridad
 
-1. Una SourceSignal no se transforma físicamente en Opportunity.
+1. SourceSignal no se transforma físicamente en Opportunity.
 2. Una Opportunity puede agrupar varias señales.
 3. Una señal puede justificar varias Opportunities.
 4. Descartar una Opportunity no elimina señales.
 5. Opportunity no crea automáticamente Suggestion ni Idea.
-6. Las relaciones deben impedir cruces entre usuarios.
+6. Las relaciones impiden cruces entre usuarios.
 7. RLS se aplica tanto a entidad como a tabla puente.
-8. La aplicación filtrará explícitamente por `user_id` además de RLS.
+8. La aplicación filtra explícitamente por `user_id` además de RLS.
 
 ## Coste
 
-Esta decisión cumple `ADR-020_ZERO_ADDITIONAL_COST_POLICY.md`:
-
-- usa el PostgreSQL/Supabase ya existente;
-- no necesita una API de IA;
-- no introduce proveedores nuevos;
-- no introduce suscripciones nuevas;
-- coste adicional permitido y esperado: **0 EUR**.
-
-## Consecuencias
-
-### Positivas
-
-- historial estable de oportunidades;
-- decisiones humanas persistentes;
-- trazabilidad completa a las señales originales;
-- separación limpia respecto de Suggestion Engine;
-- base adecuada para investigación, proyectos y futuros casos de estudio.
-
-### Trade-offs aceptados
-
-- dos tablas adicionales;
-- UI y acciones propias;
-- mayor disciplina de ciclo de vida.
+Cumple `ADR-020_ZERO_ADDITIONAL_COST_POLICY.md`: usa el PostgreSQL/Supabase ya existente, no necesita API de IA, no introduce proveedores ni suscripciones y mantiene **0 EUR de coste adicional**.
 
 ## Alcance inmediato
 
-OR-03 implementará:
+OR-03 implementa persistencia y RLS, `src/features/opportunities/`, alta desde señales, backlog `/opportunities`, scoring explicable y cambios de estado manuales.
 
-- persistencia y RLS;
-- frontera `src/features/opportunities/`;
-- alta de Opportunity desde una señal;
-- backlog `/opportunities`;
-- scoring explicable;
-- cambios de estado manuales.
-
-La definición de la futura entidad `CaseStudy` queda fuera de este ADR y requerirá evaluación independiente cuando OR-04 la necesite.
+La futura entidad `CaseStudy` queda fuera de este ADR y deberá evaluarse cuando OR-04 la necesite.
