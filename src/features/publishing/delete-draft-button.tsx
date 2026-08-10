@@ -1,13 +1,16 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { deleteBufferDraft } from "./actions";
+import { deleteBufferDraftSafely } from "./delete-draft-action";
 
 export function DeleteDraftButton({ jobId }: { jobId: string }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
 
   function removeDraft() {
     if (isPending) {
@@ -23,21 +26,23 @@ export function DeleteDraftButton({ jobId }: { jobId: string }) {
     }
 
     setMessage(null);
+    setIsError(false);
+
     startTransition(async () => {
-      try {
-        const result = await deleteBufferDraft(jobId);
-        setMessage(
-          result.alreadyDeleted
-            ? "Este draft ya estaba eliminado."
-            : "Draft eliminado de Buffer.",
-        );
-      } catch (error) {
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "No se pudo eliminar el draft de Buffer.",
-        );
+      const result = await deleteBufferDraftSafely(jobId);
+
+      if (!result.ok) {
+        setIsError(true);
+        setMessage(result.error);
+        return;
       }
+
+      setMessage(
+        result.alreadyDeleted
+          ? "Este draft ya estaba eliminado."
+          : "Draft eliminado de Buffer. El registro se conserva en el historial.",
+      );
+      router.refresh();
     });
   }
 
@@ -53,7 +58,12 @@ export function DeleteDraftButton({ jobId }: { jobId: string }) {
         {isPending ? "Eliminando…" : "Eliminar draft de Buffer"}
       </button>
       {message ? (
-        <p className="mt-2 text-xs text-[var(--muted)]" role="status">
+        <p
+          className={`mt-2 rounded-lg px-3 py-2 text-xs ${
+            isError ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
+          }`}
+          role={isError ? "alert" : "status"}
+        >
           {message}
         </p>
       ) : null}
