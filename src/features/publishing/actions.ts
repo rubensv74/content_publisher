@@ -100,6 +100,14 @@ export async function publishPublication(formData: FormData) {
     );
   }
 
+  const linkedinText = publication.linkedin_text?.trim() ?? "";
+
+  if (!linkedinText) {
+    throw new Error(
+      "La publicación todavía no tiene texto de LinkedIn. Guarda los cambios para generar o persistir el borrador antes de enviarlo a Buffer.",
+    );
+  }
+
   if (!bufferStatus.connected) {
     throw new Error(
       bufferStatus.error ||
@@ -193,7 +201,7 @@ export async function publishPublication(formData: FormData) {
   try {
     const post = await createBufferPost({
       channelId,
-      text: publication.linkedin_text?.trim() ?? "",
+      text: linkedinText,
       action,
       scheduledFor,
       media:
