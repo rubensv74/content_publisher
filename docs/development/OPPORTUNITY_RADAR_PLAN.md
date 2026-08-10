@@ -78,8 +78,9 @@ Primer lote aprobado:
 - refresco manual/bajo demanda;
 - botón `Refrescar tecnología` en `/signals`;
 - visualización diferenciada de señales tecnológicas;
-- migración del constraint de `source_signals` aplicada al Supabase real;
-- validación de GitHub Actions: lint, typecheck y build correctos.
+- migración del constraint de `source_signals` aplicada al Supabase real y verificada;
+- GitHub Actions `Quality` completado correctamente con lint, typecheck y build;
+- RSS de Supabase confirmado como capacidad oficial del changelog.
 
 ### Invariantes
 
