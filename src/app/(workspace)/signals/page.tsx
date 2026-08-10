@@ -1,5 +1,10 @@
 import { SubmitButton } from "@/components/application/submit-button";
 import {
+  attachSignalToOpportunityAction,
+  createOpportunityFromSignalAction,
+} from "@/features/opportunities/actions";
+import { getOpportunities } from "@/features/opportunities/data";
+import {
   refreshGitHubSourceSignalsAction,
   refreshSourceSignalsAction,
   refreshTechnologySourceSignalsAction,
@@ -29,7 +34,7 @@ function itemUrl(metadata: Record<string, unknown>) {
 }
 
 export default async function SignalsPage() {
-  const signals = await getSourceSignals();
+  const [signals, opportunities] = await Promise.all([getSourceSignals(), getOpportunities()]);
   const githubStatus = getGitHubSourceConnectionStatus();
   const localSignals = signals.filter(
     (signal) =>
@@ -39,6 +44,9 @@ export default async function SignalsPage() {
     (signal) => signal.sourceType === "github" || signal.sourceType === "knowledge-base",
   );
   const technologySignals = signals.filter((signal) => signal.sourceType === "technology");
+  const linkableOpportunities = opportunities.filter(
+    (opportunity) => opportunity.status !== "dismissed" && opportunity.status !== "archived",
+  );
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -180,10 +188,47 @@ export default async function SignalsPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-slate-100 pt-3 text-xs text-slate-500">
-                  <span className="truncate">Fuente: {signal.sourceLocator}</span>
-                  <span className="truncate">Ref: {signal.sourceRef}</span>
-                  <span>Última detección: {new Date(signal.lastSeenAt).toLocaleString("es-ES")}</span>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                  <div className="flex min-w-0 flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
+                    <span className="truncate">Fuente: {signal.sourceLocator}</span>
+                    <span className="truncate">Ref: {signal.sourceRef}</span>
+                    <span>Última detección: {new Date(signal.lastSeenAt).toLocaleString("es-ES")}</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {linkableOpportunities.length > 0 ? (
+                      <form action={attachSignalToOpportunityAction} className="flex gap-2">
+                        <input type="hidden" name="signalId" value={signal.id} />
+                        <select
+                          name="opportunityId"
+                          aria-label="Oportunidad existente"
+                          className="max-w-56 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-600"
+                        >
+                          {linkableOpportunities.map((opportunity) => (
+                            <option key={opportunity.id} value={opportunity.id}>
+                              {opportunity.title}
+                            </option>
+                          ))}
+                        </select>
+                        <SubmitButton
+                          pendingLabel="Vinculando…"
+                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 disabled:cursor-wait disabled:opacity-60"
+                        >
+                          Vincular
+                        </SubmitButton>
+                      </form>
+                    ) : null}
+
+                    <form action={createOpportunityFromSignalAction}>
+                      <input type="hidden" name="signalId" value={signal.id} />
+                      <SubmitButton
+                        pendingLabel="Creando…"
+                        className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-wait disabled:opacity-60"
+                      >
+                        Crear oportunidad
+                      </SubmitButton>
+                    </form>
+                  </div>
                 </div>
               </article>
             );
