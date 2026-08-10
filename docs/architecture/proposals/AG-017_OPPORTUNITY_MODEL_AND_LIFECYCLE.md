@@ -36,17 +36,7 @@ Idea        = decisión humana de crear contenido
 
 ### `opportunities`
 
-Entidad estable propiedad del usuario. Conserva:
-
-- identidad;
-- título y resumen;
-- motivo de relevancia;
-- estado;
-- dimensiones de evaluación;
-- prioridad derivada de forma explicable;
-- notas de investigación;
-- motivo de descarte cuando proceda;
-- marcas temporales.
+Entidad estable propiedad del usuario. Conserva identidad, título, resumen, motivo de relevancia, estado, dimensiones de evaluación, prioridad derivada de forma explicable, notas de investigación, motivo de descarte y marcas temporales.
 
 ### `opportunity_source_signals`
 
@@ -69,16 +59,7 @@ archived
 
 ## Evaluación
 
-OR-03 no dependerá de ninguna API de IA. Las dimensiones se conservarán por separado en escala 1–5:
-
-- relevancia profesional;
-- accionabilidad;
-- aprendizaje;
-- potencial de proyecto;
-- potencial de caso de estudio;
-- potencial editorial;
-- novedad;
-- esfuerzo.
+OR-03 no dependerá de ninguna API de IA. Las dimensiones se conservarán por separado en escala 1–5: relevancia profesional, accionabilidad, aprendizaje, potencial de proyecto, potencial de caso de estudio, potencial editorial, novedad y esfuerzo.
 
 La prioridad será derivada mediante una regla determinista y visible. No se utilizarán ML, embeddings, vector database ni ranking opaco.
 
