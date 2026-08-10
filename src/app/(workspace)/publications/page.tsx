@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { storyTypes } from "@/config/story-types";
+import { DraftDeleteButton } from "@/features/publications/draft-delete-button";
 import { getPublications } from "@/features/publications/data";
 
 const dateFormatter = new Intl.DateTimeFormat("es-ES", {
@@ -9,8 +10,13 @@ const dateFormatter = new Intl.DateTimeFormat("es-ES", {
   year: "numeric",
 });
 
-export default async function PublicationsPage() {
+export default async function PublicationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deleted?: string; deleteError?: string }>;
+}) {
   const publications = await getPublications();
+  const { deleted, deleteError } = await searchParams;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -23,6 +29,18 @@ export default async function PublicationsPage() {
           Aquí viven los borradores que ya han superado la fase de idea. Cada publicación conserva su historia, formato y evolución hasta llegar a preview y publicación.
         </p>
       </header>
+
+      {deleted === "1" ? (
+        <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Borrador eliminado correctamente.
+        </div>
+      ) : null}
+
+      {deleteError ? (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {deleteError}
+        </div>
+      ) : null}
 
       {publications.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
@@ -67,16 +85,24 @@ export default async function PublicationsPage() {
                   <p className="mt-2 text-sm text-[var(--muted)]">{publication.topic}</p>
                 ) : null}
 
-                <div className="mt-5 flex items-center justify-between gap-3">
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                   <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                     {publication.status}
                   </span>
-                  <Link
-                    href={`/publications/${publication.id}/studio`}
-                    className="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-                  >
-                    Abrir Content Studio →
-                  </Link>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {publication.status === "draft" ? (
+                      <DraftDeleteButton
+                        publicationId={publication.id}
+                        title={publication.title}
+                      />
+                    ) : null}
+                    <Link
+                      href={`/publications/${publication.id}/studio`}
+                      className="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                    >
+                      Abrir Content Studio →
+                    </Link>
+                  </div>
                 </div>
               </article>
             );
