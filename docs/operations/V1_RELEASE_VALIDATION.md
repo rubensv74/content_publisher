@@ -1,6 +1,6 @@
 # Validación de Release Candidate V1
 
-Fecha: 2026-08-09
+Fecha: 2026-08-10
 
 ## Objetivo
 
@@ -13,13 +13,13 @@ Fuente real
   ↓
 Suggestion Engine asistido con ChatGPT Plus
   ↓
-Suggestion
+Suggestion + STORY draft
   ↓
 Idea
   ↓
-Publication
+Publication con STORY precargada
   ↓
-Story + diseño
+Revisión + diseño
   ↓
 Render final
   ↓
@@ -41,7 +41,8 @@ La publicación pública en LinkedIn no forma parte de una validación automáti
 3. Confirmar que se descarga un `.txt`.
 4. Abrir el archivo y comprobar que contiene `CONTENT PUBLISHER — PAQUETE PARA CHATGPT PLUS`.
 5. Confirmar que incluye al menos una señal.
-6. Si aparece una advertencia de GitHub, registrarla como incidencia de configuración, no como fallo del contrato manual.
+6. Confirmar que el contrato exige `topic` y `storyDraft` con siete bloques.
+7. Si aparece una advertencia de GitHub, registrarla como incidencia de configuración, no como fallo del contrato manual.
 
 ### Procesado en ChatGPT Plus
 
@@ -49,7 +50,10 @@ La publicación pública en LinkedIn no forma parte de una validación automáti
 2. Indicar que siga exactamente las instrucciones del paquete.
 3. Verificar que la respuesta contiene únicamente el objeto JSON requerido.
 4. Confirmar que cada propuesta referencia uno o más `sourceSignalIds` incluidos en el paquete.
-5. Guardar opcionalmente la respuesta como `.json` o `.txt`.
+5. Confirmar que `topic` es editorial y no una etiqueta interna como `Suggestion Engine`.
+6. Confirmar que `storyDraft` contiene `problem`, `attempts`, `solution`, `result`, `learning`, `insight` y `cta`.
+7. Confirmar que los hechos no respaldados se devuelven como `null`, especialmente intentos y resultados.
+8. Guardar opcionalmente la respuesta como `.json` o `.txt`.
 
 ### Importación
 
@@ -65,19 +69,37 @@ La aplicación debe:
 - rechazar JSON inválido;
 - rechazar IDs de señales inexistentes;
 - rechazar enums, arquetipos o confianza fuera del contrato;
+- rechazar `storyDraft` ausente o bloques con tipos no válidos;
+- limitar el tema editorial a 100 caracteres;
+- limitar cada bloque STORY;
 - mostrar un mensaje visible de error sin abandonar la pantalla;
 - mostrar el número de propuestas importadas cuando la respuesta es válida.
 
-### Ciclo de revisión
+### Ciclo de revisión y handoff editorial
 
 1. Aceptar una Suggestion.
 2. Verificar estado `Aceptada`.
 3. Convertirla en Idea.
 4. Verificar que aparece en `/ideas`.
 5. Comprobar que la Idea conserva oportunidad, rationale y recomendación inicial.
-6. Descartar otra Suggestion y comprobar que queda registrada como descartada.
+6. Confirmar que el campo Tema contiene el `topic` editorial y no metadatos internos.
+7. Pulsar **Convertir en publicación**.
+8. Confirmar que se precargan story type y formato recomendados.
+9. Confirmar que los bloques STORY respaldados aparecen ya rellenados.
+10. Confirmar que los bloques devueltos como `null` permanecen vacíos.
+11. Confirmar que están presentes también `Resultado` y `Pregunta o CTA`.
+12. Editar libremente cualquier bloque antes de crear el borrador.
+13. Descartar otra Suggestion y comprobar que queda registrada como descartada.
 
-**RC-01 PASS** cuando una Suggestion real completa `ChatGPT → importación → aceptación → Idea` sin modificación manual de base de datos.
+**RC-01 PASS** cuando una Suggestion real completa `ChatGPT → importación → aceptación → Idea → Publication con STORY precargada` sin modificación manual de base de datos y sin inventar hechos ausentes de las fuentes.
+
+### Resultado de la primera ejecución
+
+La primera ejecución humana del 2026-08-09 validó correctamente:
+
+`Signal → ChatGPT Plus → importación → Suggestion → aceptación → Idea`
+
+pero detectó que el contrato original no transportaba STORY y la pantalla de creación de Publication quedaba vacía. La incidencia se considera **hallazgo RC**, no una nueva decisión arquitectónica. El contrato ha sido ampliado y RC-01 debe repetirse con un paquete nuevo.
 
 ---
 
@@ -195,6 +217,7 @@ Comprobar:
 - `GITHUB_SOURCE_TOKEN` fuera de GitHub/Supabase;
 - ningún `OPENAI_API_KEY` en runtime;
 - contexto profundo de Suggestion Engine no persistido;
+- STORY draft contiene únicamente síntesis editorial, no copia masiva de las fuentes;
 - ninguna publicación pública sin confirmación humana.
 
 ---
@@ -228,11 +251,11 @@ V1 puede etiquetarse `v1.0.0` cuando:
 - documentación operativa actualizada;
 - no existe ningún gate de arquitectura abierto.
 
-## Estado inicial
+## Estado actual
 
 | Validación | Estado |
 |---|---|
-| RC-01 ChatGPT Plus | Pendiente de prueba humana |
+| RC-01 ChatGPT Plus | Repetir con contrato STORY v2 |
 | RC-02 Fuentes | Pendiente de prueba humana |
 | RC-03 Ciclo editorial | Pendiente de prueba humana |
 | RC-04 Reconciliación Buffer | Pendiente / según trabajo disponible |
@@ -240,4 +263,4 @@ V1 puede etiquetarse `v1.0.0` cuando:
 | RC-06 Seguridad | Parcialmente validada por diseño/auditoría |
 | RC-07 Calidad técnica | Activa en CI |
 
-La siguiente comprobación manual obligatoria es **RC-01**.
+La siguiente comprobación manual obligatoria es repetir **RC-01** con un paquete generado después de la corrección STORY.

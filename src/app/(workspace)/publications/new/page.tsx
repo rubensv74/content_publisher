@@ -20,6 +20,44 @@ const formats = [
   },
 ] as const;
 
+const storyFields = [
+  {
+    name: "problem",
+    label: "Problema o contexto",
+    placeholder: "¿Qué estaba ocurriendo y por qué importaba?",
+  },
+  {
+    name: "attempts",
+    label: "Qué intentaste",
+    placeholder: "Enfoques previos, limitaciones o alternativas consideradas.",
+  },
+  {
+    name: "solution",
+    label: "Decisión o solución",
+    placeholder: "¿Qué hiciste finalmente y por qué?",
+  },
+  {
+    name: "result",
+    label: "Resultado",
+    placeholder: "¿Qué resultado concreto se obtuvo? Déjalo vacío si aún no existe.",
+  },
+  {
+    name: "learning",
+    label: "Aprendizaje",
+    placeholder: "¿Qué cambió en tu forma de entender el problema?",
+  },
+  {
+    name: "insight",
+    label: "Idea transferible",
+    placeholder: "¿Qué puede llevarse otra persona a su propio contexto?",
+  },
+  {
+    name: "cta",
+    label: "Pregunta o CTA",
+    placeholder: "¿Qué conversación quieres abrir al final?",
+  },
+] as const;
+
 export default async function NewPublicationPage({
   searchParams,
 }: {
@@ -50,6 +88,13 @@ export default async function NewPublicationPage({
 
   const defaultStoryType = recommendation?.storyType ?? "problem-solution";
   const defaultFormat = recommendation?.format ?? "single-image";
+  const defaultTopic =
+    recommendation?.topic?.trim() ||
+    (idea.source_type === "suggestion-engine" ? "" : idea.topic ?? "");
+  const storyDraft = recommendation?.storyDraft ?? null;
+  const prefilledStoryCount = storyDraft
+    ? Object.values(storyDraft).filter((value) => Boolean(value)).length
+    : 0;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -110,7 +155,7 @@ export default async function NewPublicationPage({
                   id="topic"
                   name="topic"
                   maxLength={100}
-                  defaultValue={idea.topic ?? ""}
+                  defaultValue={defaultTopic}
                   className="w-full rounded-xl border border-[var(--border)] px-4 py-3 outline-none transition focus:border-slate-500"
                 />
               </div>
@@ -144,25 +189,25 @@ export default async function NewPublicationPage({
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
                 No hace falta escribir bonito todavía. Queremos capturar hechos, decisiones y aprendizaje.
               </p>
+              {recommendation ? (
+                <p className="mt-3 rounded-xl border border-violet-100 bg-violet-50/70 px-4 py-3 text-sm leading-6 text-violet-950">
+                  ChatGPT Plus ha preparado {prefilledStoryCount} de {storyFields.length} bloques con la evidencia disponible. Revísalos y completa únicamente lo que conozcas; los bloques sin respaldo se dejan vacíos a propósito.
+                </p>
+              ) : null}
             </div>
 
             <div className="grid gap-4">
-              {[
-                ["problem", "Problema o contexto", "¿Qué estaba ocurriendo y por qué importaba?"],
-                ["attempts", "Qué intentaste", "Enfoques previos, limitaciones o alternativas consideradas."],
-                ["solution", "Decisión o solución", "¿Qué hiciste finalmente y por qué?"],
-                ["learning", "Aprendizaje", "¿Qué cambió en tu forma de entender el problema?"],
-                ["insight", "Idea transferible", "¿Qué puede llevarse otra persona a su propio contexto?"],
-              ].map(([name, label, placeholder]) => (
-                <div key={name}>
-                  <label className="mb-2 block text-sm font-medium" htmlFor={name}>
-                    {label}
+              {storyFields.map((field) => (
+                <div key={field.name}>
+                  <label className="mb-2 block text-sm font-medium" htmlFor={field.name}>
+                    {field.label}
                   </label>
                   <textarea
-                    id={name}
-                    name={name}
+                    id={field.name}
+                    name={field.name}
                     rows={3}
-                    placeholder={placeholder}
+                    defaultValue={storyDraft?.[field.name] ?? ""}
+                    placeholder={field.placeholder}
                     className="w-full resize-y rounded-xl border border-[var(--border)] px-4 py-3 outline-none transition focus:border-slate-500"
                   />
                 </div>
@@ -219,9 +264,9 @@ export default async function NewPublicationPage({
             Idea de origen
           </p>
           <h2 className="mt-3 font-semibold">{idea.title}</h2>
-          {idea.topic ? (
+          {defaultTopic ? (
             <span className="mt-3 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-              {idea.topic}
+              {defaultTopic}
             </span>
           ) : null}
           {idea.notes ? (
@@ -243,6 +288,10 @@ export default async function NewPublicationPage({
                   <dd className="font-medium">{recommendation.storyType}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
+                  <dt className="text-[var(--muted)]">Story</dt>
+                  <dd className="font-medium">{prefilledStoryCount}/{storyFields.length} bloques</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
                   <dt className="text-[var(--muted)]">Formato</dt>
                   <dd className="font-medium">{recommendation.format}</dd>
                 </div>
@@ -254,7 +303,7 @@ export default async function NewPublicationPage({
                 </div>
               </dl>
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                Historia y formato se precargan como punto de partida. El diseño sigue siendo una decisión editable en Content Studio.
+                Tema, historia, formato y STORY se precargan como punto de partida. El diseño sigue siendo editable en Content Studio y ningún bloque STORY debe tomarse como hecho sin revisión humana.
               </p>
             </div>
           ) : null}

@@ -118,7 +118,7 @@ export async function convertSuggestionToIdeaAction(formData: FormData) {
   const { data: suggestion, error: suggestionError } = await supabase
     .from("suggestions")
     .select(
-      "id,title,opportunity,rationale,story_type,format,design_family,archetype_key,priority,status",
+      "id,title,topic,opportunity,rationale,story_type,story_draft,format,design_family,archetype_key,priority,status",
     )
     .eq("id", suggestionId)
     .eq("user_id", userId)
@@ -138,12 +138,16 @@ export async function convertSuggestionToIdeaAction(formData: FormData) {
     "",
     `Recomendación inicial: ${suggestion.story_type} · ${suggestion.format} · ${suggestion.design_family} · ${suggestion.archetype_key}`,
   ].join("\n");
+  const topic =
+    typeof suggestion.topic === "string" && suggestion.topic.trim()
+      ? suggestion.topic.trim()
+      : null;
   const { data: idea, error: ideaError } = await supabase
     .from("ideas")
     .insert({
       user_id: userId,
       title: suggestion.title,
-      topic: `Suggestion Engine · ${suggestion.story_type}`,
+      topic,
       notes,
       source_type: "suggestion-engine",
       source_ref: suggestion.id,

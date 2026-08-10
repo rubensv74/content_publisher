@@ -1,6 +1,6 @@
 # Estado de implementación
 
-Fecha de actualización: 2026-08-09
+Fecha de actualización: 2026-08-10
 
 ## Resumen ejecutivo
 
@@ -37,7 +37,7 @@ TXT preparado y sanitizado
   ↓
 ChatGPT Plus — interacción manual
   ↓
-JSON estructurado
+JSON estructurado + STORY draft
   ↓
 validación Content Publisher
   ↓
@@ -46,6 +46,8 @@ suggestions
 Aceptar / Descartar
   ↓
 Idea
+  ↓
+Publication con STORY precargada
 ```
 
 ### Implementado
@@ -60,11 +62,23 @@ Idea
 - límite de importación de 256 KB;
 - feedback visible cuando la importación falla;
 - validación de IDs, enums, confianza y arquetipo;
+- tema editorial propuesto por ChatGPT, separado de metadatos internos;
+- `storyDraft` estructurado con `problem`, `attempts`, `solution`, `result`, `learning`, `insight` y `cta`;
+- regla contractual: un bloque STORY no respaldado por las señales debe ser `null`;
 - persistencia `suggestions` + `suggestion_source_signals`;
-- deduplicación por fingerprint;
+- persistencia ligera de `suggestions.topic` y `suggestions.story_draft`;
+- deduplicación por fingerprint versionado para distinguir el contrato STORY v2;
 - estados `new`, `accepted`, `dismissed`, `converted`;
 - conversión explícita a Idea;
+- precarga de tema, story type, formato y STORY al convertir una Idea procedente de Suggestion Engine en Publication;
+- formulario de creación de Publication alineado con los siete bloques STORY, incluidos `result` y `cta`;
 - ninguna publicación automática.
+
+### Incidencia descubierta en RC-01
+
+La primera prueba humana validó `Signal → ChatGPT Plus → Suggestion → Idea`, pero reveló que el contrato anterior solo clasificaba la oportunidad y dejaba vacíos los bloques STORY al iniciar la Publication.
+
+La corrección mantiene ADR-019 y no introduce ninguna API ni proveedor nuevo: ChatGPT Plus prepara ahora un STORY draft basado exclusivamente en las señales. La prueba RC-01 debe repetirse con un paquete nuevo porque las Suggestions importadas con el contrato anterior no contienen `topic` ni `story_draft`.
 
 ### Coste de IA
 
@@ -100,7 +114,7 @@ Entidades relevantes:
 - `renders`;
 - `publishing_jobs`.
 
-RLS protege los datos por `user_id`. El contexto enriquecido no se persiste como copia documental.
+`suggestions` incorpora `topic` y `story_draft JSONB`. El JSONB solo actúa como estructura editorial acotada; el contrato de importación valida los siete campos y limita su longitud. RLS protege los datos por `user_id`. El contexto enriquecido de las fuentes no se persiste como copia documental.
 
 ## Configuración externa
 
@@ -120,15 +134,15 @@ El repositorio es público de forma intencionada para la estrategia de GitHub Ac
 
 ## Calidad
 
-GitHub Actions ejecuta instalación, ESLint, TypeScript y build. La implementación actual del flujo ChatGPT Plus y las mejoras de importación superan el workflow `Quality`.
+GitHub Actions ejecuta instalación, ESLint, TypeScript y build. Cada corrección del Release Candidate debe superar el workflow `Quality` antes de considerarse cerrada.
 
-Vercel está rechazando temporalmente los deployments más recientes por `build-rate-limit`. Se trata de un bloqueo operativo del proveedor, no de un fallo detectado por lint, TypeScript o build. La validación manual RC-01 debe hacerse sobre un deployment que incluya la versión actual del flujo.
+Los bloqueos `build-rate-limit` de Vercel se registran como incidencia operativa independiente cuando GitHub Quality permanece verde.
 
 ## Release Candidate
 
 Validaciones definidas:
 
-- RC-01 — ChatGPT Plus → Suggestion → Idea;
+- RC-01 — ChatGPT Plus → Suggestion → Idea → STORY precargada;
 - RC-02 — calidad de las fuentes;
 - RC-03 — ciclo editorial completo hasta Buffer Draft;
 - RC-04 — reconciliación Buffer;
@@ -140,6 +154,4 @@ No se añadirá alcance funcional nuevo durante esta fase salvo que una incidenc
 
 ## Gates
 
-Gates aprobados hasta **AG-016**. Decisiones registradas hasta **ADR-019**.
-
-**No existe un gate de arquitectura abierto.** El desarrollo puede continuar autónomamente hasta que aparezca una nueva decisión estructural real.
+La corrección del handoff STORY es una mejora funcional dentro del flujo manual aprobado por AG-016 / ADR-019 y del uso de JSONB ya aprobado; no abre un gate nuevo.

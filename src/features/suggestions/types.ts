@@ -17,6 +17,16 @@ export const SUGGESTION_STATUSES = [
 ] as const;
 export type SuggestionStatus = (typeof SUGGESTION_STATUSES)[number];
 
+export type SuggestionStoryDraft = {
+  problem: string | null;
+  attempts: string | null;
+  solution: string | null;
+  result: string | null;
+  learning: string | null;
+  insight: string | null;
+  cta: string | null;
+};
+
 export type SuggestionSignalContext = {
   kind: "source-commit";
   repository: string;
@@ -54,9 +64,11 @@ export type SuggestionModelSignal = {
 export type SuggestionCandidate = {
   sourceSignalIds: string[];
   title: string;
+  topic: string;
   opportunity: string;
   rationale: string;
   storyType: StoryTypeKey;
+  storyDraft: SuggestionStoryDraft;
   format: PublicationFormat;
   designFamily: DesignFamilyKey;
   archetypeKey: string;

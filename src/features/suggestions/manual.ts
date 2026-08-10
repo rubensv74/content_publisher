@@ -26,10 +26,16 @@ function normalize(value: string) {
 }
 
 function fingerprintSuggestion(candidate: SuggestionCandidate) {
+  const storyFingerprint = Object.values(candidate.storyDraft)
+    .map((value) => (value ? normalize(value) : ""))
+    .join("|");
   const payload = [
+    "story-v2",
     [...candidate.sourceSignalIds].sort().join(","),
     normalize(candidate.title),
+    normalize(candidate.topic),
     candidate.storyType,
+    storyFingerprint,
     candidate.format,
     candidate.designFamily,
     candidate.archetypeKey,
@@ -100,9 +106,11 @@ export async function persistChatGPTSuggestionResponse(raw: string) {
   const rows = prepared.map(({ suggestion, fingerprint }) => ({
     user_id: userId,
     title: suggestion.title,
+    topic: suggestion.topic,
     opportunity: suggestion.opportunity,
     rationale: suggestion.rationale,
     story_type: suggestion.storyType,
+    story_draft: suggestion.storyDraft,
     format: suggestion.format,
     design_family: suggestion.designFamily,
     archetype_key: suggestion.archetypeKey,
