@@ -2,10 +2,25 @@ name: Quality
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+    paths:
+      - "src/**"
+      - "supabase/**"
+      - "package.json"
+      - "tsconfig.json"
+      - "eslint.config.mjs"
+      - "next.config.ts"
+      - "postcss.config.mjs"
+      - "components.json"
+      - ".github/workflows/quality.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
