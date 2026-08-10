@@ -140,7 +140,7 @@ Esta decisión cumple `ADR-020_ZERO_ADDITIONAL_COST_POLICY.md`:
 OR-03 implementará:
 
 - persistencia y RLS;
-- frontera `src/features/opportunities`;
+- frontera `src/features/opportunities/`;
 - alta de Opportunity desde una señal;
 - backlog `/opportunities`;
 - scoring explicable;
