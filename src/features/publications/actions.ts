@@ -12,6 +12,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getArchetypeDefinition } from "@/publication-renderer/archetypes/registry";
 
+import { buildLinkedInDraft } from "./linkedin-draft";
 import type { PublicationStoryContent } from "./types";
 
 function optionalText(value: FormDataEntryValue | null) {
@@ -75,19 +76,27 @@ export async function createPublicationFromIdea(formData: FormData) {
     redirect("/ideas");
   }
 
+  const storyContent = storyContentFromForm(formData);
+  const normalizedTitle = title.trim();
+  const linkedinText = buildLinkedInDraft({
+    title: normalizedTitle,
+    story: storyContent,
+  });
+
   const { supabase, userId } = await getAuthenticatedContext();
   const { data, error } = await supabase
     .from("publications")
     .insert({
       user_id: userId,
       source_idea_id: ideaId,
-      title: title.trim(),
+      title: normalizedTitle,
       topic: optionalText(formData.get("topic")),
       story_type: storyType,
       format,
       status: "draft",
-      structured_content: storyContentFromForm(formData),
+      structured_content: storyContent,
       content_schema_version: 1,
+      linkedin_text: linkedinText || null,
     })
     .select("id")
     .single();
@@ -128,14 +137,24 @@ export async function updatePublicationStory(formData: FormData) {
     redirect("/publications");
   }
 
+  const storyContent = storyContentFromForm(formData);
+  const normalizedTitle = title.trim();
+  const manualLinkedInText = optionalText(formData.get("linkedinText"));
+  const linkedinText =
+    manualLinkedInText ??
+    buildLinkedInDraft({
+      title: normalizedTitle,
+      story: storyContent,
+    });
+
   const { supabase, userId } = await getAuthenticatedContext();
   const { error } = await supabase
     .from("publications")
     .update({
-      title: title.trim(),
+      title: normalizedTitle,
       topic: optionalText(formData.get("topic")),
-      structured_content: storyContentFromForm(formData),
-      linkedin_text: optionalText(formData.get("linkedinText")),
+      structured_content: storyContent,
+      linkedin_text: linkedinText || null,
     })
     .eq("id", publicationId)
     .eq("user_id", userId);
