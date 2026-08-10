@@ -4,9 +4,7 @@
 
 Plan preparado el 2026-08-10.
 
-Opportunity Radar se planifica mientras Content Publisher cierra su V1.
-
-**OR-00, OR-01 y OR-02 completados.** El sistema ya dispone de un primer lote de fuentes tecnológicas externas RSS/Atom de coste adicional cero integrado en `source_signals` y ejecutable bajo demanda.
+**OR-00, OR-01, OR-02 y OR-03 completados.** El sistema ya puede observar señales tecnológicas externas, convertirlas en Opportunities persistentes, agrupar varias señales bajo una misma oportunidad, evaluarlas con scoring explicable y gestionar su ciclo de vida en un backlog propio.
 
 ## Objetivo
 
@@ -36,9 +34,9 @@ Idea / Publication
 - Coste adicional obligatorio = 0 EUR según `ADR-020_ZERO_ADDITIONAL_COST_POLICY.md`.
 - Reutilizar `src/features/source-signals` para adquisición y normalización de señales.
 - Reutilizar `src/features/suggestions` para propuestas editoriales.
-- Introducir `opportunities` como frontera funcional propia solo cuando el modelo esté cerrado.
-- No mezclar una noticia con una Suggestion ni con una Idea.
-- No crear scheduler en el primer incremento.
+- `opportunities` es una frontera funcional propia según `ADR-022_PERSISTENT_OPPORTUNITY_DOMAIN_MODEL.md`.
+- No mezclar una noticia con una Opportunity, Suggestion ni Idea.
+- No crear scheduler antes de demostrar valor.
 - No construir un crawler web genérico.
 - Cada incremento debe dejar una capacidad utilizable y verificable.
 - Las fuentes externas se incorporarán de forma curada y medible.
@@ -56,81 +54,73 @@ Se cerró `AG-014` con la opción B: catálogo curado + adaptadores por tipo de 
 
 Catálogo inicial documentado en `docs/research/OPPORTUNITY_RADAR_SOURCE_CATALOG_V1.md`.
 
-Primer lote aprobado:
-
-- GitHub Changelog;
-- Supabase Changelog;
-- OpenAI Product Release Notes.
+Primer lote aprobado: GitHub Changelog, Supabase Changelog y OpenAI Product Release Notes.
 
 ---
 
 ## OR-02 — Primeras señales tecnológicas externas — COMPLETADO
 
+Implementado el tipo `technology`, catálogo técnico P0, lector RSS/Atom propio, adaptador de fuentes tecnológicas, normalización, fingerprint/deduplicación, tolerancia a fallos, refresco manual y visualización en `/signals`.
+
+Invariantes: sin API comercial, sin API de IA, sin dependencia facturable, sin scheduler y sin almacenar artículos completos.
+
+---
+
+## OR-03 — Opportunity Engine y Opportunity Backlog — COMPLETADO
+
+### Decisión arquitectónica
+
+`AG-017` cerrado con opción B y registrado en `ADR-022_PERSISTENT_OPPORTUNITY_DOMAIN_MODEL.md`.
+
 ### Implementado
 
-- tipo de señal `technology`;
-- catálogo técnico versionado de fuentes P0;
-- lector propio RSS/Atom sin dependencia npm nueva;
-- adaptador de fuentes tecnológicas;
-- normalización de título, resumen, fecha, URL y metadatos;
-- fingerprint estable y deduplicación mediante la infraestructura existente;
-- tolerancia a fallos por fuente: una fuente que falla no impide procesar las demás;
-- refresco manual/bajo demanda;
-- botón `Refrescar tecnología` en `/signals`;
-- visualización diferenciada de señales tecnológicas;
-- migración del constraint de `source_signals` aplicada al Supabase real y verificada;
-- GitHub Actions `Quality` completado correctamente con lint, typecheck y build;
-- RSS de Supabase confirmado como capacidad oficial del changelog.
+- tabla `opportunities` con identidad y ciclo de vida propios;
+- tabla puente `opportunity_source_signals` many-to-many;
+- RLS e integridad por usuario;
+- índices de consulta y cobertura de claves foráneas;
+- dimensiones 1–5 persistidas por separado;
+- `priority_score` y `priority` calculados de forma determinista en PostgreSQL;
+- frontera `src/features/opportunities/`;
+- creación de Opportunity desde una Source Signal;
+- vinculación de señales adicionales a Opportunities existentes;
+- backlog `/opportunities`;
+- edición de evaluación, motivo de relevancia y notas de investigación;
+- transiciones de estado controladas por dominio;
+- navegación propia dentro de Content Publisher.
 
-### Invariantes
+### Ciclo de vida
 
-- ninguna API comercial;
-- ninguna API de IA;
-- ninguna dependencia facturable;
-- no se almacenan artículos completos;
-- fuente original conservada como referencia;
-- ejecución manual, sin scheduler.
+```text
+new
+shortlisted
+researching
+project_candidate
+active
+case_study
+dismissed
+archived
+```
 
----
+### Validación
 
-## OR-03 — Opportunity Engine y Opportunity Backlog — SIGUIENTE / BLOQUEADO POR GATE
+- migraciones aplicadas al Supabase real;
+- RLS verificado en ambas tablas;
+- columnas calculadas verificadas;
+- Supabase Advisor sin nuevos avisos de seguridad atribuibles a OR-03;
+- avisos de claves foráneas introducidos por OR-03 corregidos con índices específicos;
+- GitHub Actions `Quality`: lint, typecheck y build correctos.
 
-### Objetivo
+### Coste
 
-Separar `señal interesante` de `oportunidad que merece acción`.
-
-### Alcance previsto
-
-- modelo funcional definitivo de Opportunity;
-- persistencia y RLS;
-- relación con `source_signals`;
-- evaluación inicial;
-- prioridad;
-- explicación de relevancia;
-- estados del backlog;
-- acciones humanas: seleccionar, investigar, descartar y archivar;
-- vista de backlog.
-
-### Dimensiones iniciales
-
-- relevancia profesional;
-- accionabilidad;
-- aprendizaje;
-- proyecto;
-- caso de estudio;
-- valor editorial;
-- esfuerzo;
-- novedad respecto al historial.
-
-### Gate obligatorio
-
-OR-03 introduce una entidad con identidad, persistencia y ciclo de vida propios. Antes de crear tablas o código productivo debe cerrarse el gate arquitectónico específico del modelo de Opportunity.
+0 EUR adicionales. No se utiliza IA, embeddings, vector database ni servicio externo nuevo.
 
 ---
 
-## OR-04 — De oportunidad a caso de estudio
+## OR-04 — De oportunidad a caso de estudio — SIGUIENTE / BLOQUEADO POR GATE
 
 Objetivo: convertir una oportunidad seleccionada en trabajo concreto mediante investigación, experimento, prototipo o proyecto, conservando evidencias y trazabilidad.
+
+OR-04 introduce el concepto de Case Study con identidad y evidencias propias, por lo que requiere cerrar un gate arquitectónico antes de crear nuevas tablas o código productivo.
 
 ---
 
@@ -157,12 +147,12 @@ COMPLETADO
   OR-00  arquitectura de fuentes
   OR-01  catálogo
   OR-02  señales externas
+  OR-03  Opportunity Engine + Backlog
 
 GATE ACTUAL
-  OR-03  modelo + ciclo de vida de Opportunity
+  OR-04  modelo de Case Study y evidencias
 
 DESPUÉS
-  OR-04  casos de estudio
   OR-05  integración editorial
   OR-06  radar consolidado
 
