@@ -9,6 +9,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Target,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -18,6 +19,7 @@ const navigation = [
   { href: "/", label: "Inicio", icon: BookOpenText },
   { href: "/ideas", label: "Ideas", icon: Lightbulb },
   { href: "/signals", label: "Señales", icon: Search },
+  { href: "/opportunities", label: "Oportunidades", icon: Target },
   { href: "/suggestions", label: "Sugerencias", icon: Sparkles },
   { href: "/publications", label: "Publicaciones", icon: FileText },
   { href: "/designs", label: "Diseños", icon: LayoutTemplate },
