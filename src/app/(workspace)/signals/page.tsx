@@ -108,7 +108,7 @@ export default async function SignalsPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Radar tecnológico</p>
           <p className="mt-2 text-3xl font-semibold">{technologySignals.length}</p>
           <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-            señales de fuentes oficiales gratuitas
+            Power Platform primero · tecnología complementaria después
           </p>
         </div>
         <div
@@ -136,11 +136,26 @@ export default async function SignalsPage() {
         </div>
       </section>
 
+      {technologySignals.length > 0 ? (
+        <section className="mb-6 rounded-2xl border border-violet-200 bg-violet-50/60 p-5 text-sm leading-6 text-violet-950">
+          <p className="font-semibold">Las señales tecnológicas ya no se convierten directamente en oportunidades.</p>
+          <p className="mt-1">
+            Conservamos el titular original para trazabilidad. La curación asistida con ChatGPT Plus filtra primero por Power Platform y genera en español únicamente oportunidades con una aplicación profesional concreta.
+          </p>
+          <a
+            href="/opportunities"
+            className="mt-3 inline-flex font-semibold underline underline-offset-4"
+          >
+            Ir a curación de oportunidades →
+          </a>
+        </section>
+      ) : null}
+
       {signals.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
           <h2 className="text-lg font-semibold">Todavía no hay señales registradas</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[var(--muted)]">
-            Refresca las fuentes locales o el radar tecnológico. Las fuentes tecnológicas iniciales son oficiales, públicas y no generan coste adicional.
+            Refresca las fuentes locales o el radar tecnológico. El radar prioriza fuentes oficiales de Power Platform sin introducir costes adicionales.
           </p>
         </section>
       ) : (
@@ -219,15 +234,24 @@ export default async function SignalsPage() {
                       </form>
                     ) : null}
 
-                    <form action={createOpportunityFromSignalAction}>
-                      <input type="hidden" name="signalId" value={signal.id} />
-                      <SubmitButton
-                        pendingLabel="Creando…"
-                        className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-wait disabled:opacity-60"
+                    {signal.sourceType === "technology" ? (
+                      <a
+                        href="/opportunities"
+                        className="rounded-lg bg-violet-700 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-600"
                       >
-                        Crear oportunidad
-                      </SubmitButton>
-                    </form>
+                        Curar con ChatGPT Plus
+                      </a>
+                    ) : (
+                      <form action={createOpportunityFromSignalAction}>
+                        <input type="hidden" name="signalId" value={signal.id} />
+                        <SubmitButton
+                          pendingLabel="Creando…"
+                          className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-wait disabled:opacity-60"
+                        >
+                          Crear oportunidad
+                        </SubmitButton>
+                      </form>
+                    )}
                   </div>
                 </div>
               </article>
