@@ -39,17 +39,11 @@ async function readChatGPTImport(formData: FormData) {
 }
 
 export async function importChatGPTOpportunitiesAction(formData: FormData) {
+  let result: Awaited<ReturnType<typeof persistChatGPTOpportunityResponse>>;
+
   try {
     const raw = await readChatGPTImport(formData);
-    const result = await persistChatGPTOpportunityResponse(raw);
-    const params = new URLSearchParams({
-      imported: String(result.imported),
-      persisted: String(result.persisted),
-      skipped: String(result.skipped),
-    });
-    revalidatePath("/opportunities");
-    revalidatePath("/signals");
-    redirect(`/opportunities?${params.toString()}`);
+    result = await persistChatGPTOpportunityResponse(raw);
   } catch (error) {
     const message =
       error instanceof Error
@@ -58,4 +52,13 @@ export async function importChatGPTOpportunitiesAction(formData: FormData) {
     const params = new URLSearchParams({ importError: message.slice(0, 240) });
     redirect(`/opportunities?${params.toString()}`);
   }
+
+  revalidatePath("/opportunities");
+  revalidatePath("/signals");
+  const params = new URLSearchParams({
+    imported: String(result.imported),
+    persisted: String(result.persisted),
+    skipped: String(result.skipped),
+  });
+  redirect(`/opportunities?${params.toString()}`);
 }
