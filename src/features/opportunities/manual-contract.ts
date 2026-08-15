@@ -49,10 +49,15 @@ function requiredText(value: unknown, label: string, maxLength: number) {
 }
 
 function evaluationScore(value: unknown, label: string) {
-  if (!Number.isInteger(value) || (value as number) < 1 || (value as number) > 5) {
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > 5
+  ) {
     throw new Error(`${label} debe ser un entero entre 1 y 5.`);
   }
-  return value as number;
+  return value;
 }
 
 function parseCandidate(
