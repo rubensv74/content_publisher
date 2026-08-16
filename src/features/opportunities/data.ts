@@ -1,14 +1,16 @@
 import { redirect } from "next/navigation";
 
+import type { SourceSignalSourceType } from "@/features/source-signals/types";
 import { createClient } from "@/lib/supabase/server";
 
 import type {
+  OpportunityPriority,
   OpportunityRecord,
+  OpportunityResearchWorkspace,
   OpportunitySignalSummary,
   OpportunityStatus,
-  OpportunityPriority,
 } from "./types";
-import type { SourceSignalSourceType } from "@/features/source-signals/types";
+import { emptyOpportunityResearchWorkspace } from "./types";
 
 type OpportunityRow = {
   id: string;
@@ -27,6 +29,7 @@ type OpportunityRow = {
   priority_score: number;
   priority: OpportunityPriority;
   research_notes: string | null;
+  research_workspace: unknown;
   dismissal_reason: string | null;
   status_changed_at: string;
   created_at: string;
@@ -47,6 +50,28 @@ type SignalRow = {
   occurred_at: string | null;
 };
 
+function workspaceText(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function parseResearchWorkspace(value: unknown): OpportunityResearchWorkspace {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { ...emptyOpportunityResearchWorkspace };
+  }
+
+  const record = value as Record<string, unknown>;
+  return {
+    version: 1,
+    objective: workspaceText(record.objective),
+    questions: workspaceText(record.questions),
+    validationPlan: workspaceText(record.validationPlan),
+    evidence: workspaceText(record.evidence),
+    findings: workspaceText(record.findings),
+    conclusion: workspaceText(record.conclusion),
+    nextStep: workspaceText(record.nextStep),
+  };
+}
+
 async function getAuthenticatedContext() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
@@ -64,7 +89,7 @@ export async function getOpportunities(): Promise<OpportunityRecord[]> {
   const { data, error } = await supabase
     .from("opportunities")
     .select(
-      "id,title,summary,relevance_reason,status,professional_relevance,actionability,learning_potential,project_potential,case_study_potential,editorial_potential,novelty,effort,priority_score,priority,research_notes,dismissal_reason,status_changed_at,created_at,updated_at",
+      "id,title,summary,relevance_reason,status,professional_relevance,actionability,learning_potential,project_potential,case_study_potential,editorial_potential,novelty,effort,priority_score,priority,research_notes,research_workspace,dismissal_reason,status_changed_at,created_at,updated_at",
     )
     .eq("user_id", userId)
     .order("priority_score", { ascending: false })
@@ -142,6 +167,7 @@ export async function getOpportunities(): Promise<OpportunityRecord[]> {
     priorityScore: row.priority_score,
     priority: row.priority,
     researchNotes: row.research_notes,
+    researchWorkspace: parseResearchWorkspace(row.research_workspace),
     dismissalReason: row.dismissal_reason,
     statusChangedAt: row.status_changed_at,
     createdAt: row.created_at,
