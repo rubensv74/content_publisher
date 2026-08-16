@@ -6,7 +6,6 @@ import {
   updateOpportunityEvaluationAction,
   updateOpportunityStatusAction,
 } from "@/features/opportunities/actions";
-import { AssistedCurationPanel } from "@/features/opportunities/assisted-curation-panel";
 import { getOpportunities } from "@/features/opportunities/data";
 import {
   allowedOpportunityTransitions,
@@ -22,13 +21,7 @@ import {
 export const metadata: Metadata = { title: "Oportunidades" };
 
 type Props = {
-  searchParams: Promise<{
-    created?: string;
-    imported?: string;
-    persisted?: string;
-    skipped?: string;
-    importError?: string;
-  }>;
+  searchParams: Promise<{ created?: string }>;
 };
 
 const scoreFields = [
@@ -68,12 +61,6 @@ function scoreValue(
   return opportunity[key];
 }
 
-function optionalCount(value: string | undefined) {
-  if (value === undefined) return null;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 export default async function OpportunitiesPage({ searchParams }: Props) {
   const [opportunities, params] = await Promise.all([getOpportunities(), searchParams]);
   const highPriority = opportunities.filter((item) => item.priority === "high").length;
@@ -91,27 +78,20 @@ export default async function OpportunitiesPage({ searchParams }: Props) {
           </p>
           <h1 className="text-4xl font-semibold tracking-tight">Oportunidades</h1>
           <p className="mt-4 text-base leading-7 text-[var(--muted)]">
-            Aquí una señal deja de ser una simple novedad y pasa a convertirse en una posibilidad profesional que puedes investigar, transformar en proyecto y, solo después de generar evidencia real, llevar a caso de estudio.
+            Aquí solo llegan temas que has decidido convertir en trabajo. Las noticias se leen y filtran antes en el Radar; una Opportunity ya implica investigar, probar, diseñar un prototipo o generar evidencia profesional.
           </p>
         </div>
         <Link
-          href="/signals"
+          href="/news"
           className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
-          Revisar señales
+          Revisar noticias
         </Link>
       </header>
 
-      <AssistedCurationPanel
-        imported={optionalCount(params.imported)}
-        persisted={optionalCount(params.persisted)}
-        skipped={optionalCount(params.skipped)}
-        importError={params.importError?.trim() || null}
-      />
-
       {params.created === "1" ? (
         <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 text-sm text-emerald-950">
-          Oportunidad creada desde la señal. Revisa ahora su relevancia y puntuaciones antes de seleccionarla.
+          Oportunidad creada. Revisa su relevancia y puntuaciones antes de seleccionarla.
         </section>
       ) : null}
 
@@ -141,7 +121,7 @@ export default async function OpportunitiesPage({ searchParams }: Props) {
       <section className="mb-7 rounded-2xl border border-slate-200 bg-white p-5">
         <p className="text-sm font-semibold">Cómo se calcula la prioridad</p>
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-          {opportunityScoreFormula}. Cada dimensión se puntúa de 1 a 5. La prioridad es alta desde 45 puntos, media desde 30 y baja por debajo de 30. No interviene ningún modelo de IA dentro de la aplicación; la curación asistida se realiza manualmente con ChatGPT Plus y las puntuaciones importadas siguen siendo visibles y editables.
+          {opportunityScoreFormula}. Cada dimensión se puntúa de 1 a 5. La prioridad es alta desde 45 puntos, media desde 30 y baja por debajo de 30. Las puntuaciones son visibles y editables; no existe un ranking opaco.
         </p>
       </section>
 
@@ -149,22 +129,16 @@ export default async function OpportunitiesPage({ searchParams }: Props) {
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
           <h2 className="text-lg font-semibold">Todavía no hay oportunidades</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[var(--muted)]">
-            Descarga el paquete de curación. ChatGPT Plus filtrará las señales con foco Power Platform y Content Publisher conservará la trazabilidad a las fuentes originales.
+            Revisa Noticias y convierte únicamente aquello que merezca investigación, aprendizaje o un prototipo real.
           </p>
-          <Link
-            href="/signals"
-            className="mt-4 inline-block text-sm font-semibold underline underline-offset-4"
-          >
-            Ir a Señales
+          <Link href="/news" className="mt-4 inline-block text-sm font-semibold underline underline-offset-4">
+            Ir a Noticias
           </Link>
         </section>
       ) : (
         <div className="space-y-5">
           {opportunities.map((opportunity) => (
-            <article
-              key={opportunity.id}
-              className="rounded-2xl border border-[var(--border)] bg-white p-6"
-            >
+            <article key={opportunity.id} className="rounded-2xl border border-[var(--border)] bg-white p-6">
               <div className="flex flex-wrap items-start justify-between gap-5">
                 <div className="max-w-4xl">
                   <div className="flex flex-wrap items-center gap-2">
@@ -174,9 +148,7 @@ export default async function OpportunitiesPage({ searchParams }: Props) {
                     <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${priorityClass(opportunity.priority)}`}>
                       Prioridad {opportunityPriorityLabels[opportunity.priority]}
                     </span>
-                    <span className="text-xs font-semibold text-slate-500">
-                      Score {opportunity.priorityScore}
-                    </span>
+                    <span className="text-xs font-semibold text-slate-500">Score {opportunity.priorityScore}</span>
                   </div>
                   <h2 className="mt-3 text-xl font-semibold tracking-tight">{opportunity.title}</h2>
                   {opportunity.summary ? (
@@ -199,10 +171,7 @@ export default async function OpportunitiesPage({ searchParams }: Props) {
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trazabilidad · fuente original</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {opportunity.signals.map((signal) => (
-                    <span
-                      key={signal.id}
-                      className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600"
-                    >
+                    <span key={signal.id} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">
                       {signal.sourceType} · {signal.title}
                     </span>
                   ))}
@@ -261,9 +230,7 @@ export default async function OpportunitiesPage({ searchParams }: Props) {
               </form>
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                <p className="text-xs text-slate-400">
-                  Estado desde {new Date(opportunity.statusChangedAt).toLocaleString("es-ES")}
-                </p>
+                <p className="text-xs text-slate-400">Estado desde {new Date(opportunity.statusChangedAt).toLocaleString("es-ES")}</p>
                 <div className="flex flex-wrap gap-2">
                   {allowedOpportunityTransitions[opportunity.status].map((nextStatus) => (
                     <form key={nextStatus} action={updateOpportunityStatusAction}>
