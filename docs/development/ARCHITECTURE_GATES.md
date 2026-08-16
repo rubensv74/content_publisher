@@ -22,6 +22,7 @@ Evitar decisiones técnicas importantes implícitas. El desarrollo continúa de 
 - AG-014 — `SourceContextResolver` efímero, acotado y sanitizado.
 - AG-015 — generación exclusivamente bajo demanda.
 - **AG-016 — no usar API de IA de pago; flujo asistido/manual con ChatGPT Plus. `ADR-019_CHATGPT_PLUS_ASSISTED_MANUAL_SUGGESTION_WORKFLOW.md`.**
+- **AG-017 — dominio persistente `News` separado de `Opportunity`, enlazado a `source_signals`, con curación manual mediante ChatGPT Plus. Opción A aprobada. `ADR-023_SEPARATE_PROFESSIONAL_NEWS_DOMAIN.md`.**
 
 ## Suggestion Engine vigente
 
@@ -62,6 +63,33 @@ Reglas vigentes:
 - Suggestions persistentes con deduplicación y RLS;
 - ninguna generación recurrente;
 - ninguna publicación automática.
+
+## Professional News Radar vigente
+
+```text
+fuentes oficiales
+      ↓
+source_signals
+      ↓
+paquete equilibrado: Power Apps · Power BI · IA aplicada
+      ↓
+ChatGPT Plus — interacción humana
+      ↓
+JSON validado
+      ↓
+news_items
+      ↓ decisión humana
+opportunities
+```
+
+Reglas vigentes:
+
+- `NewsItem` no es `Opportunity`;
+- Power Apps, Power BI e IA aplicada son las tres corrientes prioritarias;
+- la interfaz de noticias se consume en español aunque la fuente esté en inglés;
+- no se replica el artículo completo;
+- una noticia solo pasa a Opportunity mediante acción humana explícita;
+- coste adicional 0 EUR, sin API de IA y sin scheduler.
 
 ## Estado global
 
