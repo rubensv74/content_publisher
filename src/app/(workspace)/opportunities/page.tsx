@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SubmitButton } from "@/components/application/submit-button";
 import {
   updateOpportunityEvaluationAction,
+  updateOpportunityResearchAction,
   updateOpportunityStatusAction,
 } from "@/features/opportunities/actions";
 import { getOpportunities } from "@/features/opportunities/data";
@@ -60,6 +61,13 @@ function scoreValue(
 ) {
   return opportunity[key];
 }
+
+function showsResearchWorkspace(status: OpportunityStatus) {
+  return ["researching", "project_candidate", "active", "case_study"].includes(status);
+}
+
+const researchFieldClass =
+  "mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 outline-none focus:border-blue-300";
 
 export default async function OpportunitiesPage({ searchParams }: Props) {
   const [opportunities, params] = await Promise.all([getOpportunities(), searchParams]);
@@ -197,27 +205,15 @@ export default async function OpportunitiesPage({ searchParams }: Props) {
                   ))}
                 </div>
 
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  <label className="text-xs font-semibold text-slate-600">
-                    Motivo de relevancia
-                    <textarea
-                      name="relevanceReason"
-                      rows={3}
-                      defaultValue={opportunity.relevanceReason ?? ""}
-                      className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6"
-                    />
-                  </label>
-                  <label className="text-xs font-semibold text-slate-600">
-                    Notas de investigación
-                    <textarea
-                      name="researchNotes"
-                      rows={3}
-                      defaultValue={opportunity.researchNotes ?? ""}
-                      placeholder="Preguntas, pruebas realizadas, enlaces, próximos pasos…"
-                      className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6"
-                    />
-                  </label>
-                </div>
+                <label className="mt-4 block text-xs font-semibold text-slate-600">
+                  Motivo de relevancia
+                  <textarea
+                    name="relevanceReason"
+                    rows={3}
+                    defaultValue={opportunity.relevanceReason ?? ""}
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6"
+                  />
+                </label>
 
                 <div className="mt-3 flex justify-end">
                   <SubmitButton
@@ -228,6 +224,129 @@ export default async function OpportunitiesPage({ searchParams }: Props) {
                   </SubmitButton>
                 </div>
               </form>
+
+              {opportunity.status === "shortlisted" ? (
+                <section className="mt-5 rounded-2xl border border-blue-200 bg-blue-50/60 p-5 text-sm leading-6 text-blue-950">
+                  <p className="font-semibold">Lista para investigar</p>
+                  <p className="mt-1">
+                    Cambia el estado a <strong>Investigando</strong> para abrir un cuaderno estructurado donde separar preguntas, plan, evidencias, hallazgos y conclusiones.
+                  </p>
+                </section>
+              ) : null}
+
+              {showsResearchWorkspace(opportunity.status) ? (
+                <section className="mt-5 border-t border-slate-100 pt-5">
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="max-w-3xl">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">Research Workspace</p>
+                        <h3 className="mt-2 text-lg font-semibold">Cuaderno de investigación</h3>
+                        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                          Registra qué quieres validar, cómo lo comprobarás y qué evidencia has encontrado. Una oportunidad solo debería avanzar a proyecto cuando exista una conclusión explícita.
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-blue-700">
+                        {opportunityStatusLabels[opportunity.status]}
+                      </span>
+                    </div>
+
+                    <form action={updateOpportunityResearchAction} className="mt-5">
+                      <input type="hidden" name="opportunityId" value={opportunity.id} />
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Qué quiero averiguar o validar
+                          <textarea
+                            name="researchObjective"
+                            rows={3}
+                            defaultValue={opportunity.researchWorkspace.objective ?? ""}
+                            placeholder="Ej.: determinar qué datos gobernados puede consultar Copilot y qué cambia para el diseño funcional de una solución Power BI."
+                            className={researchFieldClass}
+                          />
+                        </label>
+                        <label className="text-xs font-semibold text-slate-700">
+                          Preguntas que debo resolver
+                          <textarea
+                            name="researchQuestions"
+                            rows={3}
+                            defaultValue={opportunity.researchWorkspace.questions ?? ""}
+                            placeholder="Una pregunta por línea. Qué está disponible, requisitos, límites, seguridad, escenarios de uso…"
+                            className={researchFieldClass}
+                          />
+                        </label>
+                        <label className="text-xs font-semibold text-slate-700">
+                          Cómo lo voy a comprobar
+                          <textarea
+                            name="researchValidationPlan"
+                            rows={4}
+                            defaultValue={opportunity.researchWorkspace.validationPlan ?? ""}
+                            placeholder="Documentación oficial, prueba controlada, comparación, prototipo, preguntas a resolver…"
+                            className={researchFieldClass}
+                          />
+                        </label>
+                        <label className="text-xs font-semibold text-slate-700">
+                          Evidencias y enlaces
+                          <textarea
+                            name="researchEvidence"
+                            rows={4}
+                            defaultValue={opportunity.researchWorkspace.evidence ?? ""}
+                            placeholder="URLs oficiales, capturas, resultados de pruebas, restricciones observadas…"
+                            className={researchFieldClass}
+                          />
+                        </label>
+                        <label className="text-xs font-semibold text-slate-700">
+                          Hallazgos
+                          <textarea
+                            name="researchFindings"
+                            rows={4}
+                            defaultValue={opportunity.researchWorkspace.findings ?? ""}
+                            placeholder="Solo lo observado o confirmado; separa hechos de hipótesis."
+                            className={researchFieldClass}
+                          />
+                        </label>
+                        <label className="text-xs font-semibold text-slate-700">
+                          Conclusión
+                          <textarea
+                            name="researchConclusion"
+                            rows={4}
+                            defaultValue={opportunity.researchWorkspace.conclusion ?? ""}
+                            placeholder="Qué has aprendido y si la oportunidad merece avanzar."
+                            className={researchFieldClass}
+                          />
+                        </label>
+                        <label className="text-xs font-semibold text-slate-700 lg:col-span-2">
+                          Siguiente paso
+                          <textarea
+                            name="researchNextStep"
+                            rows={2}
+                            defaultValue={opportunity.researchWorkspace.nextStep ?? ""}
+                            placeholder="Continuar investigando, construir un prototipo, convertir en candidata a proyecto o descartar."
+                            className={researchFieldClass}
+                          />
+                        </label>
+                        <label className="text-xs font-semibold text-slate-700 lg:col-span-2">
+                          Notas libres
+                          <textarea
+                            name="researchNotes"
+                            rows={3}
+                            defaultValue={opportunity.researchNotes ?? ""}
+                            placeholder="Apuntes auxiliares que no encajan todavía en una conclusión estructurada."
+                            className={researchFieldClass}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="mt-4 flex justify-end">
+                        <SubmitButton
+                          pendingLabel="Guardando investigación…"
+                          className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60"
+                        >
+                          Guardar investigación
+                        </SubmitButton>
+                      </div>
+                    </form>
+                  </div>
+                </section>
+              ) : null}
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
                 <p className="text-xs text-slate-400">Estado desde {new Date(opportunity.statusChangedAt).toLocaleString("es-ES")}</p>

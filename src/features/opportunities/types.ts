@@ -23,6 +23,28 @@ export type OpportunityEvaluation = {
   effort: number;
 };
 
+export type OpportunityResearchWorkspace = {
+  version: 1;
+  objective: string | null;
+  questions: string | null;
+  validationPlan: string | null;
+  evidence: string | null;
+  findings: string | null;
+  conclusion: string | null;
+  nextStep: string | null;
+};
+
+export const emptyOpportunityResearchWorkspace: OpportunityResearchWorkspace = {
+  version: 1,
+  objective: null,
+  questions: null,
+  validationPlan: null,
+  evidence: null,
+  findings: null,
+  conclusion: null,
+  nextStep: null,
+};
+
 export type OpportunitySignalSummary = {
   id: string;
   sourceType: SourceSignalSourceType;
@@ -41,6 +63,7 @@ export type OpportunityRecord = OpportunityEvaluation & {
   priorityScore: number;
   priority: OpportunityPriority;
   researchNotes: string | null;
+  researchWorkspace: OpportunityResearchWorkspace;
   dismissalReason: string | null;
   statusChangedAt: string;
   createdAt: string;

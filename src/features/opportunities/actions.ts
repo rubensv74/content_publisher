@@ -13,6 +13,7 @@ import {
 import {
   opportunityStatuses,
   type OpportunityEvaluation,
+  type OpportunityResearchWorkspace,
   type OpportunityStatus,
 } from "./types";
 
@@ -58,6 +59,19 @@ function readEvaluation(formData: FormData): OpportunityEvaluation {
     editorialPotential: score(formData, "editorialPotential"),
     novelty: score(formData, "novelty"),
     effort: score(formData, "effort"),
+  };
+}
+
+function readResearchWorkspace(formData: FormData): OpportunityResearchWorkspace {
+  return {
+    version: 1,
+    objective: optionalText(formData, "researchObjective", 2400),
+    questions: optionalText(formData, "researchQuestions", 4000),
+    validationPlan: optionalText(formData, "researchValidationPlan", 4000),
+    evidence: optionalText(formData, "researchEvidence", 6000),
+    findings: optionalText(formData, "researchFindings", 6000),
+    conclusion: optionalText(formData, "researchConclusion", 4000),
+    nextStep: optionalText(formData, "researchNextStep", 2400),
   };
 }
 
@@ -157,14 +171,12 @@ export async function updateOpportunityEvaluationAction(formData: FormData) {
   const opportunityId = requireString(formData, "opportunityId", "la oportunidad");
   const evaluation = readEvaluation(formData);
   const relevanceReason = optionalText(formData, "relevanceReason", 1200);
-  const researchNotes = optionalText(formData, "researchNotes", 6000);
   const { supabase, userId } = await getAuthenticatedUser();
 
   const { error } = await supabase
     .from("opportunities")
     .update({
       relevance_reason: relevanceReason,
-      research_notes: researchNotes,
       professional_relevance: evaluation.professionalRelevance,
       actionability: evaluation.actionability,
       learning_potential: evaluation.learningPotential,
@@ -179,6 +191,47 @@ export async function updateOpportunityEvaluationAction(formData: FormData) {
 
   if (error) {
     throw new Error(`No se pudo actualizar la evaluación: ${error.message}`);
+  }
+
+  revalidatePath("/opportunities");
+}
+
+export async function updateOpportunityResearchAction(formData: FormData) {
+  const opportunityId = requireString(formData, "opportunityId", "la oportunidad");
+  const researchWorkspace = readResearchWorkspace(formData);
+  const researchNotes = optionalText(formData, "researchNotes", 6000);
+  const { supabase, userId } = await getAuthenticatedUser();
+
+  const { data: opportunity, error: opportunityError } = await supabase
+    .from("opportunities")
+    .select("status")
+    .eq("id", opportunityId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (opportunityError) {
+    throw new Error(`No se pudo cargar la oportunidad: ${opportunityError.message}`);
+  }
+  if (!opportunity) {
+    throw new Error("La oportunidad no existe.");
+  }
+
+  const status = opportunity.status as OpportunityStatus;
+  if (!["researching", "project_candidate", "active", "case_study"].includes(status)) {
+    throw new Error("Activa el estado Investigando antes de guardar un workspace de investigación.");
+  }
+
+  const { error } = await supabase
+    .from("opportunities")
+    .update({
+      research_workspace: researchWorkspace,
+      research_notes: researchNotes,
+    })
+    .eq("id", opportunityId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`No se pudo guardar la investigación: ${error.message}`);
   }
 
   revalidatePath("/opportunities");
