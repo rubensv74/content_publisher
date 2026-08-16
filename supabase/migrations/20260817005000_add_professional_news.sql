@@ -25,7 +25,7 @@ create table if not exists public.news_items (
   constraint news_items_converted_opportunity_user_fkey
     foreign key (converted_opportunity_id, user_id)
     references public.opportunities(id, user_id)
-    on delete set null
+    on delete restrict
 );
 
 create table if not exists public.news_item_source_signals (
