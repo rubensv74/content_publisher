@@ -171,14 +171,12 @@ export async function updateOpportunityEvaluationAction(formData: FormData) {
   const opportunityId = requireString(formData, "opportunityId", "la oportunidad");
   const evaluation = readEvaluation(formData);
   const relevanceReason = optionalText(formData, "relevanceReason", 1200);
-  const researchNotes = optionalText(formData, "researchNotes", 6000);
   const { supabase, userId } = await getAuthenticatedUser();
 
   const { error } = await supabase
     .from("opportunities")
     .update({
       relevance_reason: relevanceReason,
-      research_notes: researchNotes,
       professional_relevance: evaluation.professionalRelevance,
       actionability: evaluation.actionability,
       learning_potential: evaluation.learningPotential,
