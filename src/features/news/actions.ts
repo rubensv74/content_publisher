@@ -47,6 +47,8 @@ async function readChatGPTImport(formData: FormData) {
 }
 
 export async function importChatGPTNewsAction(formData: FormData) {
+  let destination: string;
+
   try {
     const raw = await readChatGPTImport(formData);
     const result = await persistChatGPTNewsResponse(raw);
@@ -57,12 +59,16 @@ export async function importChatGPTNewsAction(formData: FormData) {
     });
     revalidatePath("/news");
     revalidatePath("/signals");
-    redirect(`/news?${params.toString()}`);
+    destination = `/news?${params.toString()}`;
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo importar la curación de noticias.";
     const params = new URLSearchParams({ importError: message.slice(0, 240) });
-    redirect(`/news?${params.toString()}`);
+    destination = `/news?${params.toString()}`;
   }
+
+  // Next.js implements redirect() by throwing an internal NEXT_REDIRECT signal.
+  // Keep it outside the try/catch so a successful import is not misreported as an error.
+  redirect(destination);
 }
 
 export async function updateNewsStatusAction(formData: FormData) {
